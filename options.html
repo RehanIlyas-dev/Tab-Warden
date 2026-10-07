@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tab Warden options</title>
+    <link rel="stylesheet" href="/src/popup/style.css" />
+  </head>
+  <body class="options">
+    <header class="bar">
+      <h1>Tab Warden options</h1>
+    </header>
+
+    <section class="block">
+      <h2>Duplicate detection</h2>
+      <label class="row">
+        <input type="checkbox" id="ignore-pinned" />
+        <span>Keep pinned tabs when closing duplicates</span>
+      </label>
+      <label class="row">
+        <span>Log window for notification reports</span>
+        <select id="retention">
+          <option value="1">1 day</option>
+          <option value="7" selected>7 days</option>
+          <option value="30">30 days</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Extension audit</h2>
+        <span class="hint">sorted by cost, not by install order</span>
+      </div>
+      <div id="extensions" class="list"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Notification spam</h2>
+        <button id="clear-log" class="primary" type="button">Clear log</button>
+      </div>
+      <div id="notifications" class="list"></div>
+    </section>
+
+    <script type="module" src="/src/options/main.js"></script>
+  </body>
+</html>

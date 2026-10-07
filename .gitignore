@@ -1,0 +1,22 @@
+node_modules/
+dist/
+*.zip
+
+# build metadata
+.vite/
+tsconfig.tsbuildinfo
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# logs
+*.log
+npm-debug.log*
+
+# env
+.env
+.env.*
+!.env.example

@@ -1,0 +1,20 @@
+{
+  "name": "tab-warden",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension that finds duplicate tabs, ranks tab weight, audits installed extensions and reports notification spam.",
+  "type": "module",
+  "engines": {
+    "chrome": ">=120"
+  },
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "vite build",
+    "test": "echo \"no tests yet\"",
+    "package": "vite build && cd dist && zip -r ../tab-warden-0.1.0.zip . -x '.*'"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.30",
+    "vite": "^7.1.7"
+  }
+}
