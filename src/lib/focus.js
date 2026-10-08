@@ -1,10 +1,3 @@
-// Focus logic, separated from the DOM so it can be tested without a browser.
-//
-// The popup calls focusTab on a click. If the underlying chrome call rejects and
-// nothing catches it, the popup looks completely dead: no error, no movement.
-// Everything here returns a result object instead of throwing, so the caller
-// always has something to report.
-
 /**
  * @param {object} deps
  * @param {{update: Function, get: Function}} deps.tabs chrome.tabs subset
@@ -12,6 +5,7 @@
  * @param {{id: number, windowId?: number}} tab
  * @returns {Promise<{ok: boolean, focusedTab: boolean, focusedWindow: boolean, error?: string}>}
  */
+
 export async function focusTab({ tabs, windows }, tab) {
   const result = { ok: false, focusedTab: false, focusedWindow: false }
 

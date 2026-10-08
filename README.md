@@ -1,23 +1,5 @@
 <div align="center">
 
-<h1>Tab Warden</h1>
-
-<p><strong>A Chrome extension that finds duplicate tabs, groups every open tab by site, and closes the copies you no longer need.</strong></p>
-
-<p>
-<a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/manifest-MV3-4285F4?style=flat-square" alt="Manifest V3" height="20"></a>
-<a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/chrome-120%2B-4285F4?style=flat-square" alt="Chrome 120+" height="20"></a>
-<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"><img src="https://img.shields.io/badge/javascript-ES2022-F7DF1E?style=flat-square" alt="JavaScript ES2022" height="20"></a>
-<a href="https://vite.dev/"><img src="https://img.shields.io/badge/build-vite-646CFF?style=flat-square" alt="Vite" height="20"></a>
-<a href="https://www.npmjs.com/"><img src="https://img.shields.io/badge/npm-CB3837?style=flat-square" alt="npm" height="20"></a>
-<a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/runtime_dependencies-none-2EA44F?style=flat-square" alt="Zero runtime dependencies" height="20"></a>
-<a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/telemetry-none-2EA44F?style=flat-square" alt="No telemetry" height="20"></a>
-<a href="https://github.com"><img src="https://img.shields.io/badge/build-passing-2EA44F?style=flat-square" alt="Build passing" height="20"></a>
-<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-66_passing-2EA44F?style=flat-square" alt="66 tests passing" height="20"></a>
-</p>
-
-</div>
-
 ---
 
 ## The problem
@@ -36,14 +18,14 @@ Tab Warden answers one question: what is costing me right now, and what can I cl
 
 ## Features
 
-| Feature                   | What it does                                              | Status   |
-| ------------------------- | --------------------------------------------------------- | -------- |
-| **Duplicate finder**      | Groups tabs by normalized URL and closes the copies        | Shipped  |
-| **All tabs by site**      | Every open tab, grouped by domain, click to focus          | Shipped  |
-| **Guarded closing**       | Never closes the active tab or your pinned tabs            | Shipped  |
-| **Tab weight ranking**    | Ranks tabs by memory pressure                              | Planned  |
-| **Extension audit**       | Scores installed extensions by permissions and host access | Planned  |
-| **Notification log**      | Aggregates notification events by registrable domain       | Planned  |
+| Feature                      | What it does                                               | Status  |
+| ---------------------------- | ---------------------------------------------------------- | ------- |
+| **Duplicate finder**   | Groups tabs by normalized URL and closes the copies        | Shipped |
+| **All tabs by site**   | Every open tab, grouped by domain, click to focus          | Shipped |
+| **Guarded closing**    | Never closes the active tab or your pinned tabs            | Shipped |
+| **Tab weight ranking** | Ranks tabs by memory pressure                              | Planned |
+| **Extension audit**    | Scores installed extensions by permissions and host access | Planned |
+| **Notification log**   | Aggregates notification events by registrable domain       | Planned |
 
 Shipped features are covered by 66 unit tests. Planned features are not built and
 are not requested as permissions.
@@ -157,12 +139,12 @@ npm run package
 Chrome does not hot reload extensions. Run `npm run dev`, then press the reload
 icon on the extension card in `chrome://extensions`.
 
-| Permission      | Why                          | Required by      |
-| --------------- | ---------------------------- | ---------------- |
-| `tabs`          | Read tab URLs and titles     | Duplicate finder |
-| `storage`       | Persist preferences          | Duplicate finder |
-| `notifications` | Observe notification events  | Not shipped yet  |
-| `management`    | List installed extensions    | Not shipped yet  |
+| Permission        | Why                         | Required by      |
+| ----------------- | --------------------------- | ---------------- |
+| `tabs`          | Read tab URLs and titles    | Duplicate finder |
+| `storage`       | Persist preferences         | Duplicate finder |
+| `notifications` | Observe notification events | Not shipped yet  |
+| `management`    | List installed extensions   | Not shipped yet  |
 
 ## Privacy
 
@@ -189,12 +171,3 @@ Keep logic that can be tested in `src/lib/`. Avoid adding runtime dependencies.
 ## License
 
 Not yet licensed.
-
-## Roadmap
-
-1. Replace the placeholder icons with designed artwork
-2. Add a `LICENSE`
-3. Tab weight ranking using the `processes` permission
-4. Extension audit with a permission cost score
-5. Notification spam report by registrable domain
-6. Chrome Web Store submission
