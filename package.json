@@ -12,7 +12,8 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "package": "vite build && cd dist && zip -r ../tab-warden-0.1.0.zip . -x '.*'"
+    "package": "vite build && cd dist && zip -r ../tab-warden-0.1.0.zip . -x '.*'",
+    "icons": "python3 scripts/make-icons.py"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.30",
