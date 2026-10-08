@@ -201,13 +201,11 @@ Keep logic that can be tested in `src/lib/`. Avoid adding runtime dependencies.
 
 ## License
 
-Not yet licensed.
+MIT. See [LICENSE](LICENSE).
 
 ## Roadmap
 
-1. Replace the placeholder icons with designed artwork
-2. Add a `LICENSE`
-3. Tab weight ranking using the `processes` permission
-4. Extension audit with a permission cost score
-5. Notification spam report by registrable domain
-6. Chrome Web Store submission
+1. Tab weight ranking using the `processes` permission
+2. Extension audit with a permission cost score
+3. Notification spam report by registrable domain
+4. Chrome Web Store submission
