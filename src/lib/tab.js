@@ -75,9 +75,11 @@ export function normalizeUrl(rawUrl) {
 }
 
 // Returns the origin of a URL, or an empty string if the URL is invalid.
+// Uses .host rather than .hostname so the port is kept, which stops
+// localhost:3000 and localhost:8080 from looking like the same site.
 export function originOf(rawUrl) {
   try {
-    return bareHost(new URL(rawUrl).hostname)
+    return bareHost(new URL(rawUrl).host)
   } catch {
     return ""
   }

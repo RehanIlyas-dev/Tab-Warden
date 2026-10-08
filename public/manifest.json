@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "description": "Finds duplicate tabs, ranks tab weight, audits your extensions and reports notification spam.",
   "minimum_chrome_version": "120",
-  "permissions": ["tabs", "storage", "notifications", "management"],
+  "permissions": [
+    "tabs",
+    "storage"
+  ],
   "background": {
     "service_worker": "assets/background.js",
     "type": "module"

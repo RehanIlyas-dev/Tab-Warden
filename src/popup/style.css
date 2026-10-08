@@ -2,7 +2,7 @@
 
 :root {
   color-scheme: light dark;
-  --bg: #0f1115;
+  --bg: #0f131a;
   --panel: #171a21;
   --text: #e6e8ee;
   --muted: #9aa3b2;
@@ -14,6 +14,14 @@
   box-sizing: border-box;
 }
 
+/*
+  No height and no overflow on html or body.
+
+  An extension popup is sized by its content, so there is no definite viewport
+  height to resolve a percentage against. Setting height:100% on html/body and
+  locking overflow collapses the popup to a sliver, because the window ends up
+  with no intrinsic height to size itself from.
+*/
 body {
   margin: 0;
   font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -21,8 +29,54 @@ body {
   color: var(--text);
 }
 
-body:not(.options) {
+/*
+  Column layout: header fixed, scroll area takes what is left, footer fixed.
+
+  max-height, not height. The popup grows to fit its content up to the cap, so
+  a session with two tabs gives a short popup instead of a tall empty one. Once
+  content exceeds the cap, this becomes the constraint that bounds the middle
+  row and makes overflow-y work.
+*/
+.popup-shell {
+  display: flex;
+  flex-direction: column;
   width: 360px;
+  max-height: 580px;
+}
+
+/*
+  The scroll container.
+
+  flex: 1 1 auto  grow into the leftover height
+  min-height: 0    the part that actually makes scrolling work. A flex item
+                   defaults to min-height:auto, meaning it refuses to shrink
+                   below its content. Without this override the item grows to
+                   the full content height, there is nothing left to overflow,
+                   and the list silently stops scrolling.
+  overflow-y: auto engages only because the box is now bounded.
+*/
+.popup-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #3a414f transparent;
+}
+
+/* Visible scrollbar, so a scrollable list looks scrollable. */
+.popup-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.popup-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.popup-scroll::-webkit-scrollbar-thumb {
+  background: #3a414f;
+  border-radius: 5px;
+  border: 2px solid var(--bg);
 }
 
 body.options {
@@ -38,6 +92,13 @@ body.options {
   gap: 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex: 0 0 auto;
+}
+
+footer.bar {
+  border-bottom: none;
+  border-top: 1px solid var(--border);
 }
 
 .bar h1 {
@@ -72,6 +133,29 @@ body.options {
   align-items: center;
   gap: 8px;
   padding: 4px 0;
+}
+
+/* Inline confirmation row. Replaces window.confirm, whose native dialog is
+   clipped to the popup's 360px width and pushes the OK button off-screen. */
+.confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+/* The HTML hidden attribute has to beat the flex display above. */
+.confirm[hidden] {
+  display: none;
+}
+
+#confirm-text {
+  flex: 1;
 }
 
 .stats {
@@ -111,6 +195,56 @@ body.options {
   background: var(--panel);
 }
 
+/* Site group heading inside the All tabs list. */
+.group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 2px 2px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.group-head:first-child {
+  margin-top: 0;
+}
+
+.group-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Small state chips on a tab row: pinned, playing. */
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.badge {
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Whole row is clickable, so show it is interactive. */
+.item {
+  cursor: pointer;
+}
+
+.item:hover {
+  border-color: var(--accent);
+}
+
 .item .title {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -130,6 +264,7 @@ button {
   background: var(--panel);
   color: var(--text);
   cursor: pointer;
+  flex: 0 0 auto;
 }
 
 button.primary {

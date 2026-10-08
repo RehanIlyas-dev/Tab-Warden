@@ -10,11 +10,13 @@
   "scripts": {
     "dev": "vite build --watch --mode development",
     "build": "vite build",
-    "test": "echo \"no tests yet\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "package": "vite build && cd dist && zip -r ../tab-warden-0.1.0.zip . -x '.*'"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.30",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vitest": "^5.0.3"
   }
 }

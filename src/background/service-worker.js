@@ -7,6 +7,9 @@ function toRecord(tab) {
 
   return {
     id: tab.id,
+    // Carried so the popup can bring the owning window forward. Without it a
+    // tab in another window cannot be focused properly.
+    windowId: tab.windowId,
     title: tab.title ?? tab.url,
     url: tab.url,
     origin: originOf(tab.url),
@@ -88,6 +91,13 @@ async function handle(request) {
       await chrome.storage.local.set({ [STORAGE_KEYS.settings]: next })
       return { type: "settings", settings: next }
     }
+
+    default:
+      // Without this, an unrecognised type falls out of the switch as
+      // undefined. sendResponse(undefined) would leave the popup reading
+      // .type of undefined, so every unrecognised message becomes a
+      // TypeError instead of a readable error.
+      return { type: "error", message: `Unknown message type: ${request?.type}` }
   }
 }
 

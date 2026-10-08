@@ -2,7 +2,7 @@
 
 <h1>Tab Warden</h1>
 
-<p><strong>A Chrome extension that finds duplicate tabs, ranks tab weight, audits your extensions, and reports notification spam.</strong></p>
+<p><strong>A Chrome extension that finds duplicate tabs, groups every open tab by site, and closes the copies you no longer need.</strong></p>
 
 <p>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/manifest-MV3-4285F4?style=flat-square" alt="Manifest V3" height="20"></a>
@@ -13,6 +13,7 @@
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/runtime_dependencies-none-2EA44F?style=flat-square" alt="Zero runtime dependencies" height="20"></a>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/telemetry-none-2EA44F?style=flat-square" alt="No telemetry" height="20"></a>
 <a href="https://github.com"><img src="https://img.shields.io/badge/build-passing-2EA44F?style=flat-square" alt="Build passing" height="20"></a>
+<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-66_passing-2EA44F?style=flat-square" alt="66 tests passing" height="20"></a>
 </p>
 
 </div>
@@ -35,12 +36,34 @@ Tab Warden answers one question: what is costing me right now, and what can I cl
 
 ## Features
 
-| Feature                | What it does                                              | Status          |
-| ---------------------- | --------------------------------------------------------- | --------------- |
-| **Duplicate finder**   | Groups tabs by normalized URL and closes the copies        | Engine complete |
-| **Tab weight ranking** | Ranks tabs by staleness and origin to surface heavy ones   | Planned         |
-| **Extension audit**    | Scores installed extensions by permissions and host access | Planned         |
-| **Notification log**   | Aggregates notification events by registrable domain       | Planned         |
+| Feature                   | What it does                                              | Status   |
+| ------------------------- | --------------------------------------------------------- | -------- |
+| **Duplicate finder**      | Groups tabs by normalized URL and closes the copies        | Shipped  |
+| **All tabs by site**      | Every open tab, grouped by domain, click to focus          | Shipped  |
+| **Guarded closing**       | Never closes the active tab or your pinned tabs            | Shipped  |
+| **Tab weight ranking**    | Ranks tabs by memory pressure                              | Planned  |
+| **Extension audit**       | Scores installed extensions by permissions and host access | Planned  |
+| **Notification log**      | Aggregates notification events by registrable domain       | Planned  |
+
+Shipped features are covered by 66 unit tests. Planned features are not built and
+are not requested as permissions.
+
+## Using it
+
+Open the toolbar icon. Three stat cards, then two lists:
+
+- **Duplicate tabs**, one row per group, showing how many copies exist. The
+  **Show** button jumps to that tab and raises its window.
+- **All tabs**, every open tab grouped by domain, most recent first. Click any row
+  to jump to it. Rows tagged `pinned` or `playing` are the ones cleanup will never
+  close.
+
+**Close duplicates** shows an inline confirmation, then closes the copies and
+reports how many were closed and how many were kept.
+
+Three guards protect you from losing work. The active tab is never closed, pinned
+tabs are skipped, and live tab state is re-read before anything closes, so a tab
+that navigated after the audit is left alone.
 
 ## How duplicate detection works
 
@@ -80,31 +103,41 @@ and select the `dist/` folder.
 
 Not published yet.
 
-## Usage
-
-Click the Tab Warden icon in the toolbar. The popup lists every duplicate group,
-largest first, with the tab that will be kept marked. **Close duplicates** clears
-the rest.
-
 ## Architecture
 
 ```
 Tab-Warden/
 ├── public/manifest.json
+├── public/assets/icon-16.png
 ├── popup.html
 ├── options.html
 ├── vite.config.js
-└── src/
-    ├── background/service-worker.js
-    ├── lib/tab.js
-    ├── lib/messages.js
-    ├── popup/main.js
-    ├── popup/style.css
-    └── options/main.js
+├── src/
+│   ├── background/service-worker.js
+│   ├── lib/tab.js
+│   ├── lib/focus.js
+│   ├── lib/messages.js
+│   ├── popup/main.js
+│   ├── popup/style.css
+│   └── options/main.js
+└── test/
+    ├── tab.test.js
+    ├── service-worker.test.js
+    ├── focus.test.js
+    └── fake-chrome.js
 ```
 
-`src/lib/` is pure. No `chrome.*` calls, so it runs under plain Node and is unit
-testable without a browser. All side effects live in the service worker.
+`src/lib/tab.js` is pure. No `chrome.*` calls, so it runs under plain Node and is
+unit testable without a browser. All side effects live in the service worker.
+
+`src/lib/focus.js` takes the `chrome.tabs` and `chrome.windows` objects as
+arguments instead of importing them, which is what makes it testable. It returns
+a result object rather than throwing, so a failed tab switch reaches the popup
+footer instead of vanishing into a rejected promise.
+
+`test/fake-chrome.js` is a hand-written stand-in for the slice of `chrome.*` the
+service worker calls. A real service worker cannot run in Node, so without it the
+guard rules would be untestable.
 
 The worker queries tabs on demand rather than caching from `tabCreated` and
 `tabRemoved` events. MV3 workers are killed when idle and revived with no memory,
@@ -159,8 +192,9 @@ Not yet licensed.
 
 ## Roadmap
 
-1. Wire the popup UI to the existing audit engine
-2. Tab weight ranking with per-tab memory pressure
-3. Extension audit with a permission cost score
-4. Notification spam report by registrable domain
-5. Chrome Web Store submission
+1. Replace the placeholder icons with designed artwork
+2. Add a `LICENSE`
+3. Tab weight ranking using the `processes` permission
+4. Extension audit with a permission cost score
+5. Notification spam report by registrable domain
+6. Chrome Web Store submission

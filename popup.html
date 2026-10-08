@@ -6,32 +6,42 @@
     <link rel="stylesheet" href="/src/popup/style.css" />
   </head>
   <body>
-    <header class="bar">
-      <h1>Tab Warden</h1>
-      <button id="open-options" class="link" type="button">Options</button>
-    </header>
+    <div class="popup-shell">
+      <header class="bar">
+        <h1>Tab Warden</h1>
+        <button id="open-options" class="link" type="button">Options</button>
+      </header>
 
-    <section class="stats" id="stats"></section>
+      <div class="popup-scroll">
+        <section class="stats" id="stats"></section>
 
-    <section class="block">
-      <div class="block-head">
-        <h2>Duplicate tabs</h2>
-        <button id="close-duplicates" class="primary" type="button" disabled>Close duplicates</button>
+        <section class="block">
+          <div class="block-head">
+            <h2>Duplicate tabs</h2>
+            <button id="close-duplicates" class="primary" type="button" disabled>
+              Close duplicates
+            </button>
+          </div>
+          <div id="confirm-bar" class="confirm" hidden>
+            <span id="confirm-text" class="hint"></span>
+            <button id="confirm-no" type="button">Cancel</button>
+          </div>
+          <div id="duplicates" class="list"></div>
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <h2>All tabs</h2>
+            <span class="hint" id="tabs-hint"></span>
+          </div>
+          <div id="all-tabs" class="list"></div>
+        </section>
       </div>
-      <div id="duplicates" class="list"></div>
-    </section>
 
-    <section class="block">
-      <div class="block-head">
-        <h2>Recently active</h2>
-        <span class="hint" id="ranking-hint"></span>
-      </div>
-      <div id="recent" class="list"></div>
-    </section>
-
-    <footer class="bar">
-      <span id="summary" class="hint"></span>
-    </footer>
+      <footer class="bar">
+        <span id="summary" class="hint"></span>
+      </footer>
+    </div>
 
     <script type="module" src="/src/popup/main.js"></script>
   </body>
