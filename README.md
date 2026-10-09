@@ -128,7 +128,3 @@ npm test
 ```
 
 Keep logic that can be tested in `src/lib/`. Avoid adding runtime dependencies.
-
-## License
-
-MIT. See [LICENSE](LICENSE).

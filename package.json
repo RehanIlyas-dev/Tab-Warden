@@ -2,7 +2,6 @@
   "name": "tab-warden",
   "version": "0.1.0",
   "private": true,
-  "license": "MIT",
   "description": "Chrome extension that finds duplicate tabs by normalized URL, collapses YouTube video ids and tracking-param variants, and lists every open tab grouped by site. Refuses to close the active tab or pinned tabs.",
   "type": "module",
   "engines": {
