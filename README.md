@@ -63,26 +63,6 @@ Open the toolbar icon. Three stat cards, then two lists:
 **Close duplicates** shows an inline confirmation, then closes the copies and
 reports how many were closed and how many were kept.
 
-## How duplicate detection works
-
-Naive URL comparison misses most real duplicates. Tab Warden normalizes before it
-compares:
-
-- **Campaign params stripped.** `utm_source`, `utm_medium`, `gclid`, `fbclid`,
-  `msclkid` and 19 others, plus the fragment. The same article opened from three
-  sources collapses to one tab.
-- **YouTube keyed by video id.** `youtu.be/ID`, `/watch?v=ID` and `/embed/ID` all
-  match, which is where most people's duplicate pile actually comes from.
-- **Hosts normalized.** Lowercased, `www.` dropped, trailing slashes trimmed.
-- **Never throws.** One malformed URL cannot break the whole audit.
-
-When a group has several tabs, the survivor is chosen by intent: the pinned tab
-first, then the audible one, then the most recently touched. Closing is guarded
-three ways, live tab state is re-read before anything closes, the active tab is
-never closed, and pinned tabs are skipped by default. The result reports `closed`
-and `skipped` separately so the UI can state what was kept, not just what was
-removed.
-
 ## Install
 
 ### Download the release
