@@ -1,3 +1,27 @@
+<div align="center">
+
+<h1>Tab Warden</h1>
+
+<img src="public/assets/icon-128.png" width="96" height="96" alt="Tab Warden icon">
+
+<p><strong>A Chrome extension that finds duplicate tabs, groups every open tab by site, and closes the copies you no longer need.</strong></p>
+
+<p>
+<a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/manifest-MV3-4285F4?style=flat-square" alt="Manifest V3" height="20"></a>
+<a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/chrome-120%2B-4285F4?style=flat-square" alt="Chrome 120+" height="20"></a>
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"><img src="https://img.shields.io/badge/javascript-ES2022-F7DF1E?style=flat-square" alt="JavaScript ES2022" height="20"></a>
+<a href="https://vite.dev/"><img src="https://img.shields.io/badge/build-vite-646CFF?style=flat-square" alt="Vite" height="20"></a>
+<a href="https://www.npmjs.com/"><img src="https://img.shields.io/badge/npm-CB3837?style=flat-square" alt="npm" height="20"></a>
+<a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/runtime_dependencies-none-2EA44F?style=flat-square" alt="Zero runtime dependencies" height="20"></a>
+<a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/telemetry-none-2EA44F?style=flat-square" alt="No telemetry" height="20"></a>
+<a href="https://github.com/RehanIlyas-dev/Tab-Warden/releases"><img src="https://img.shields.io/badge/release-v0.1.0-2EA44F?style=flat-square" alt="Release v0.1.0" height="20"></a>
+<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-66_passing-2EA44F?style=flat-square" alt="66 tests passing" height="20"></a>
+</p>
+
+</div>
+
+---
+
 ## The problem
 
 Chrome degrades quietly. You open the same article from a newsletter, then from
@@ -64,6 +88,13 @@ and `skipped` separately so the UI can state what was kept, not just what was
 removed.
 
 ## Install
+
+### Download the release
+
+Grab
+[`tab-warden-0.1.0.zip`](https://github.com/RehanIlyas-dev/Tab-Warden/releases/download/v0.1.0/tab-warden-0.1.0.zip),
+unzip it, then open `chrome://extensions`, turn on **Developer mode**, click
+**Load unpacked**, and pick the unzipped folder. No build step needed.
 
 ### From source
 
