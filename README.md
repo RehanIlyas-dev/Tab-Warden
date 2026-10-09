@@ -63,10 +63,6 @@ Open the toolbar icon. Three stat cards, then two lists:
 **Close duplicates** shows an inline confirmation, then closes the copies and
 reports how many were closed and how many were kept.
 
-Three guards protect you from losing work. The active tab is never closed, pinned
-tabs are skipped, and live tab state is re-read before anything closes, so a tab
-that navigated after the audit is left alone.
-
 ## How duplicate detection works
 
 Naive URL comparison misses most real duplicates. Tab Warden normalizes before it
@@ -136,23 +132,6 @@ Tab-Warden/
     ├── focus.test.js
     └── fake-chrome.js
 ```
-
-`src/lib/tab.js` is pure. No `chrome.*` calls, so it runs under plain Node and is
-unit testable without a browser. All side effects live in the service worker.
-
-`src/lib/focus.js` takes the `chrome.tabs` and `chrome.windows` objects as
-arguments instead of importing them, which is what makes it testable. It returns
-a result object rather than throwing, so a failed tab switch reaches the popup
-footer instead of vanishing into a rejected promise.
-
-`test/fake-chrome.js` is a hand-written stand-in for the slice of `chrome.*` the
-service worker calls. A real service worker cannot run in Node, so without it the
-guard rules would be untestable.
-
-The worker queries tabs on demand rather than caching from `tabCreated` and
-`tabRemoved` events. MV3 workers are killed when idle and revived with no memory,
-so an incrementally patched index returns stale with nothing to signal it. One
-`chrome.tabs.query` per popup open is cheap and always correct.
 
 ## Tech
 

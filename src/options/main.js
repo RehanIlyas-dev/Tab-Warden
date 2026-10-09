@@ -33,6 +33,7 @@ async function loadSettings() {
   showStoredSettings(response.settings)
 }
 
+// Display a message that the extension audit feature has not yet shipped, so there is no data to show.
 function reportMissing() {
   const list = $("#extensions")
   list.innerHTML = ""
