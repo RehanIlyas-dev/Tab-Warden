@@ -1,6 +1,7 @@
 node_modules/
 dist/
 *.zip
+functions.md
 
 # build metadata
 .vite/

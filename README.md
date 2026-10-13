@@ -1,8 +1,8 @@
 <div align="center">
 
-<h1>Tab Warden</h1>
-
 <img src="public/assets/icon-128.png" width="96" height="96" alt="Tab Warden icon">
+
+<h1>Tab Warden</h1>
 
 <p><strong>A Chrome extension that finds duplicate tabs, groups every open tab by site, and closes the copies you no longer need.</strong></p>
 
