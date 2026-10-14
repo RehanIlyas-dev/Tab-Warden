@@ -6,6 +6,8 @@
 
 <p><strong>A Chrome extension that finds duplicate tabs, groups every open tab by site, and closes the copies you no longer need.</strong></p>
 
+<p><img src="public/assets/screenshot.png" width="360" alt="Tab Warden popup showing duplicate tabs grouped by site"></p>
+
 <p>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/manifest-MV3-4285F4?style=flat-square" alt="Manifest V3" height="20"></a>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/chrome-120%2B-4285F4?style=flat-square" alt="Chrome 120+" height="20"></a>
