@@ -6,7 +6,7 @@
 
 <p><strong>A Chrome extension that finds duplicate tabs, groups every open tab by site, and closes the copies you no longer need.</strong></p>
 
-<p><img src="public/assets/screenshot.png" width="360" alt="Tab Warden popup showing duplicate tabs grouped by site"></p>
+<p><img src="docs/store/marquee-1400x560.png" width="100%" alt="Tab Warden banner reading duplicate tabs, found and closed, next to the popup showing duplicate groups and every tab grouped by site"></p>
 
 <p>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/manifest-MV3-4285F4?style=flat-square" alt="Manifest V3" height="20"></a>
@@ -16,7 +16,7 @@
 <a href="https://www.npmjs.com/"><img src="https://img.shields.io/badge/npm-CB3837?style=flat-square" alt="npm" height="20"></a>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/runtime_dependencies-none-2EA44F?style=flat-square" alt="Zero runtime dependencies" height="20"></a>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/telemetry-none-2EA44F?style=flat-square" alt="No telemetry" height="20"></a>
-<a href="https://github.com/RehanIlyas-dev/Tab-Warden/releases"><img src="https://img.shields.io/badge/release-v0.1.0-2EA44F?style=flat-square" alt="Release v0.1.0" height="20"></a>
+<a href="https://github.com/RehanIlyas-dev/Tab-Warden/releases"><img src="https://img.shields.io/badge/release-v0.1.1-2EA44F?style=flat-square" alt="Release v0.1.1" height="20"></a>
 <a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-139_passing-2EA44F?style=flat-square" alt="139 tests passing" height="20"></a>
 </p>
 
@@ -28,29 +28,23 @@
 
 Chrome degrades quietly. You open the same article from a newsletter, then from
 search, then from a link in Slack, and end up with nine tabs pointing at one page.
-Memory climbs and nobody can tell which tab is responsible. Separately, extensions
-run in the background for months without anyone checking what they hold. And sites
-fire notifications from origins you stopped noticing weeks ago.
+Memory climbs and nobody can tell which tab is responsible.
 
-Chrome's built-in tools do not surface any of this. Task Manager shows memory but
-not duplication. `chrome://extensions` lists permissions in developer language, not
-in terms of what they cost you.
+Chrome's built-in tools do not surface this. Task Manager shows memory but cannot
+tell you that nine of those tabs are the same page.
 
 Tab Warden answers one question: what is costing me right now, and what can I close.
 
 ## Features
 
-| Feature                | What it does                                               | Status  |
-| ---------------------- | ---------------------------------------------------------- | ------- |
-| **Duplicate finder**   | Groups tabs by normalized URL and closes the copies        | Shipped |
-| **All tabs by site**   | Every open tab, grouped by domain, click to focus          | Shipped |
-| **Guarded closing**    | Never closes the active tab or your pinned tabs            | Shipped |
-| **Tab weight ranking** | Ranks tabs by memory pressure                              | Planned |
-| **Extension audit**    | Scores installed extensions by permissions and host access | Planned |
-| **Notification log**   | Aggregates notification events by registrable domain       | Planned |
+| Feature               | What it does                                      |
+| --------------------- | ------------------------------------------------- |
+| **Duplicate finder**  | Groups tabs by normalized URL and closes the copies |
+| **All tabs by site**  | Every open tab, grouped by domain, click to focus  |
+| **Guarded closing**   | Never closes the active tab or your pinned tabs    |
 
-Shipped features are covered by 66 unit tests. Planned features are not built and
-are not requested as permissions.
+Everything here is covered by 139 unit tests, and the extension asks for only two
+permissions: `tabs` and `storage`.
 
 ## Using it
 
@@ -59,8 +53,8 @@ Open the toolbar icon. Three stat cards, then two lists:
 - **Duplicate tabs**, one row per group, showing how many copies exist. The
   **Show** button jumps to that tab and raises its window.
 - **All tabs**, every open tab grouped by domain, most recent first. Click any row
-  to jump to it. Rows tagged `pinned` or `playing` are the ones cleanup will never
-  close.
+  to jump to it. Rows tagged `pinned` are kept by default, and the tab you are
+  looking at is never closed.
 
 **Close duplicates** shows an inline confirmation, then closes the copies and
 reports how many were closed and how many were kept.
@@ -70,7 +64,7 @@ reports how many were closed and how many were kept.
 ### Download the release
 
 Grab
-[`tab-warden-0.1.0.zip`](https://github.com/RehanIlyas-dev/Tab-Warden/releases/download/v0.1.0/tab-warden-0.1.0.zip),
+[`tab-warden-0.1.1.zip`](https://github.com/RehanIlyas-dev/Tab-Warden/releases/download/v0.1.1/tab-warden-0.1.1.zip),
 unzip it, then open `chrome://extensions`, turn on **Developer mode**, click
 **Load unpacked**, and pick the unzipped folder. No build step needed.
 
@@ -97,6 +91,10 @@ Tab-Warden/
 ├── public/manifest.json
 ├── public/assets/icon-16.png
 ├── scripts/make-icons.py
+├── scripts/make-store-assets.py
+├── docs/
+│   ├── index.html
+│   └── screenshot.png
 ├── popup.html
 ├── options.html
 ├── vite.config.js

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tab Warden Privacy Policy</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --text: #1c2230;
+        --muted: #5a6273;
+        --border: #e3e6ec;
+        --accent: #2f6fdd;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 56px 24px 80px;
+      }
+      h1 { font-size: 30px; line-height: 1.25; margin: 0 0 8px; }
+      h2 {
+        font-size: 19px;
+        margin: 40px 0 10px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+      }
+      p, li { margin: 0 0 10px; }
+      ul { padding-left: 22px; }
+      .meta { color: var(--muted); margin-bottom: 28px; }
+      code {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 14px;
+        background: #f4f5f8;
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      a { color: var(--accent); }
+      footer {
+        margin-top: 48px;
+        padding-top: 18px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Tab Warden Privacy Policy</h1>
+      <p class="meta">Last updated: 19 October 2026</p>
+
+      <p>
+        Tab Warden is a Chrome extension that finds duplicate tabs, lists every open tab
+        grouped by site, and closes the copies you choose to remove. This page explains
+        what it reads, what it stores, and what it does not do.
+      </p>
+
+      <h2>What the extension reads</h2>
+      <ul>
+        <li>The URL and title of your open tabs, so it can spot duplicates and group tabs by site.</li>
+        <li>Whether a tab is pinned, playing audio, or already unloaded, so it can pick which copy to keep.</li>
+        <li>Which window a tab belongs to, so it can bring that window forward when you click a row.</li>
+        <li>Which tab you are currently looking at, so it never closes it.</li>
+      </ul>
+      <p>
+        This information is requested from Chrome each time the popup opens. It is held in
+        memory while the popup is open and is never written to disk.
+      </p>
+
+      <h2>What the extension stores</h2>
+      <p>
+        Two preferences are saved on your device with <code>chrome.storage.local</code>:
+      </p>
+      <ul>
+        <li><code>ignorePinnedWhenClosing</code>, whether pinned tabs are skipped when closing duplicates.</li>
+        <li><code>confirmBeforeClosing</code>, whether a confirmation row appears before closing.</li>
+      </ul>
+      <p>
+        Nothing else is stored. No tab titles, URLs, or browsing history are saved.
+      </p>
+
+      <h2>What the extension does not do</h2>
+      <ul>
+        <li>It makes no network requests. There is no server, no analytics, no telemetry, and no crash reporting.</li>
+        <li>It does not load or run remote code.</li>
+        <li>It does not sell, rent, or share data with anyone.</li>
+        <li>It does not read the content of web pages and does not inject scripts into them.</li>
+        <li>It does not show ads.</li>
+      </ul>
+
+      <h2>Permissions</h2>
+      <ul>
+        <li>
+          <code>tabs</code>: read the URL and title of open tabs. Without this permission,
+          Chrome only exposes tab identifiers, which are not enough to find duplicates.
+        </li>
+        <li>
+          <code>storage</code>: save the two preferences listed above on this device.
+        </li>
+      </ul>
+      <p>No other permissions are requested.</p>
+
+      <h2>Your control over the data</h2>
+      <p>
+        Your preferences stay on your device until you change them or remove the extension.
+        Removing the extension deletes them. Tab data is never kept, so there is nothing else
+        to delete.
+      </p>
+
+      <h2>Limited Use</h2>
+      <p>
+        The use of information received from Google APIs will adhere to the Chrome Web Store
+        User Data Policy, including the Limited Use requirements.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If this policy changes, the date at the top of this page changes with it. The current
+        version always lives at this URL.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Rehan Ilyas, <a href="mailto:rehanilyas4726@gmail.com">rehanilyas4726@gmail.com</a>.
+        You can also open an issue at
+        <a href="https://github.com/RehanIlyas-dev/Tab-Warden/issues">github.com/RehanIlyas-dev/Tab-Warden</a>.
+      </p>
+
+      <footer>
+        Tab Warden is a Chrome extension published by Rehan Ilyas.
+      </footer>
+    </main>
+  </body>
+</html>
