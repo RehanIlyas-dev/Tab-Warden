@@ -60,6 +60,18 @@ export function weightLabel(score, known = true) {
   return "Fresh"
 }
 
+// A short phrase for how long a tab has been idle.
+export function idlePhrase(days) {
+  if (days === null || !Number.isFinite(days)) return "last used an unknown time ago"
+  if (days < 1 / 24) return "last used a moment ago"
+  if (days < 1) {
+    const hours = Math.round(days * 24)
+    return hours === 1 ? "last used an hour ago" : `last used ${hours} hours ago`
+  }
+  if (days < 2) return "last used yesterday"
+  return `last used ${Math.floor(days)} days ago`
+}
+
 // Guards: never the active tab, skips pinned and audio unless told otherwise.
 export function isReclaimable(tab, now, options = {}) {
   if (!tab) return false

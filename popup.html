@@ -23,10 +23,28 @@
             </button>
           </div>
           <div id="confirm-bar" class="confirm" hidden>
-            <span id="confirm-text" class="hint"></span>
+            <span id="confirm-text" class="hint confirm-text"></span>
             <button id="confirm-no" type="button">Cancel</button>
           </div>
           <div id="duplicates" class="list"></div>
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <h2>Heaviest tabs</h2>
+            <button id="free-memory" class="primary" type="button" disabled>
+              Free up memory
+            </button>
+          </div>
+          <div id="confirm-bar-free" class="confirm" hidden>
+            <span id="confirm-text-free" class="hint confirm-text"></span>
+            <button id="confirm-no-free" type="button">Cancel</button>
+          </div>
+          <div id="heaviest" class="list"></div>
+          <p class="hint note">
+            An estimate, not a memory reading. Unloading frees a tab until you click it, and
+            any unsaved form on that page is lost.
+          </p>
         </section>
 
         <section class="block">

@@ -14,11 +14,23 @@
       <h2>Duplicate detection</h2>
       <label class="row">
         <input type="checkbox" id="ignore-pinned" />
-        <span>Keep pinned tabs when closing duplicates</span>
+        <span>Keep pinned tabs when closing or unloading</span>
       </label>
       <label class="row">
         <input type="checkbox" id="confirm-before-closing" />
         <span>Ask before closing tabs</span>
+      </label>
+    </section>
+
+    <section class="block">
+      <h2>Freeing memory</h2>
+      <label class="row">
+        <input type="checkbox" id="skip-audible" />
+        <span>Keep tabs that are playing audio</span>
+      </label>
+      <label class="row">
+        <input type="number" id="stale-days" min="1" max="365" step="1" />
+        <span>Days before an unused tab counts as stale</span>
       </label>
       <p id="options-status" class="hint"></p>
     </section>

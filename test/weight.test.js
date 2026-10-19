@@ -4,6 +4,7 @@ import {
   byWeight,
   idleDays,
   idleMs,
+  idlePhrase,
   isReclaimable,
   isStale,
   reclaimableIds,
@@ -306,4 +307,31 @@ describe("byWeight", () => {
   it("returns an empty list unchanged", () => {
     expect(byWeight([], NOW)).toEqual([])
   })
+
+describe("idlePhrase", () => {
+  it("describes a tab used a moment ago", () => {
+    expect(idlePhrase(0)).toBe("last used a moment ago")
+    expect(idlePhrase(0.01)).toBe("last used a moment ago")
+  })
+
+  it("describes a tab used earlier today", () => {
+    expect(idlePhrase(0.5)).toBe("last used 12 hours ago")
+    expect(idlePhrase(0.05)).toBe("last used an hour ago")
+  })
+
+  it("describes a tab used yesterday", () => {
+    expect(idlePhrase(1)).toBe("last used yesterday")
+    expect(idlePhrase(1.5)).toBe("last used yesterday")
+  })
+
+  it("describes a tab used days ago", () => {
+    expect(idlePhrase(2)).toBe("last used 2 days ago")
+    expect(idlePhrase(6.7)).toBe("last used 6 days ago")
+  })
+
+  it("describes a tab with no known age", () => {
+    expect(idlePhrase(null)).toBe("last used an unknown time ago")
+    expect(idlePhrase(NaN)).toBe("last used an unknown time ago")
+  })
+})
 })

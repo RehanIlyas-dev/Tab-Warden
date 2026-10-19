@@ -17,7 +17,7 @@
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/runtime_dependencies-none-2EA44F?style=flat-square" alt="Zero runtime dependencies" height="20"></a>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/telemetry-none-2EA44F?style=flat-square" alt="No telemetry" height="20"></a>
 <a href="https://github.com/RehanIlyas-dev/Tab-Warden/releases"><img src="https://img.shields.io/badge/release-v0.1.1-2EA44F?style=flat-square" alt="Release v0.1.1" height="20"></a>
-<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-139_passing-2EA44F?style=flat-square" alt="139 tests passing" height="20"></a>
+<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-162_passing-2EA44F?style=flat-square" alt="162 tests passing" height="20"></a>
 </p>
 
 </div>
@@ -43,7 +43,7 @@ Tab Warden answers one question: what is costing me right now, and what can I cl
 | **All tabs by site**  | Every open tab, grouped by domain, click to focus  |
 | **Guarded closing**   | Never closes the active tab or your pinned tabs    |
 
-Everything here is covered by 139 unit tests, and the extension asks for only two
+Everything here is covered by 162 unit tests, and the extension asks for only two
 permissions: `tabs` and `storage`.
 
 ## Using it

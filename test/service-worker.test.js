@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
 import { createFakeChrome } from "./fake-chrome.js"
+import { DEFAULT_SETTINGS } from "../src/lib/messages.js"
 
 // The worker calls chrome.* while the module is being evaluated, not when a
 // message arrives. So a fake has to be installed on globalThis *before* the
@@ -88,6 +89,107 @@ describe("audit:get", () => {
     const result = await fake.send({ type: "audit:get" })
 
     expect(result.groups).toHaveLength(1)
+  })
+
+  it("carries a weight and an idle age for every tab", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: 1700000000000 })],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.tabs[0].weight).toBe(60)
+    expect(result.tabs[0].idleDays).toBeGreaterThan(3)
+    expect(result.staleAfterDays).toBe(3)
+  })
+
+  it("marks the tabs that are duplicates", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com"), tab(2, "https://a.com"), tab(3, "https://b.com")],
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.tabs.find((t) => t.id === 1).duplicate).toBe(true)
+    expect(result.tabs.find((t) => t.id === 3).duplicate).toBe(false)
+  })
+
+  it("lists the tabs that may be unloaded", async () => {
+    const old = Date.now() - 5 * 86400000
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old }),
+        tab(2, "https://b.com", { lastAccessed: old }),
+        tab(3, "https://c.com", { lastAccessed: Date.now() }),
+      ],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.reclaimable).toEqual([1, 2])
+  })
+
+  it("never lists the active tab as reclaimable", async () => {
+    const old = Date.now() - 5 * 86400000
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old })],
+      activeTabId: 1,
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.reclaimable).toEqual([])
+  })
+
+  it("keeps pinned and playing tabs out of the reclaimable list", async () => {
+    const old = Date.now() - 5 * 86400000
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old, pinned: true }),
+        tab(2, "https://b.com", { lastAccessed: old, audible: true }),
+        tab(3, "https://c.com", { lastAccessed: old }),
+      ],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.reclaimable).toEqual([3])
+  })
+
+  it("includes pinned and playing tabs when the settings allow it", async () => {
+    const old = Date.now() - 5 * 86400000
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old, pinned: true }),
+        tab(2, "https://b.com", { lastAccessed: old, audible: true }),
+      ],
+      activeTabId: 99,
+      settings: { ignorePinnedWhenClosing: false, skipAudibleWhenDiscarding: false },
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.reclaimable).toEqual([1, 2])
+  })
+
+  it("honours the stale threshold", async () => {
+    const twoDays = Date.now() - 2 * 86400000
+
+    const strict = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: twoDays })],
+      activeTabId: 99,
+    })
+    expect((await strict.send({ type: "audit:get" })).reclaimable).toEqual([])
+
+    const wide = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: twoDays })],
+      activeTabId: 99,
+      settings: { staleAfterDays: 1 },
+    })
+    expect((await wide.send({ type: "audit:get" })).reclaimable).toEqual([1])
   })
 })
 
@@ -220,6 +322,146 @@ describe("tabs:close", () => {
   })
 })
 
+describe("tabs:discard", () => {
+  const old = Date.now() - 5 * 86400000
+
+  it("unloads the requested tabs", async () => {
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old }),
+        tab(2, "https://b.com", { lastAccessed: old }),
+      ],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1] })
+
+    expect(result.discarded).toEqual([1])
+    expect(fake.state.discarded).toEqual([1])
+    expect(fake.state.tabs[0].discarded).toBe(true)
+    expect(fake.state.tabs[1].discarded).toBe(false)
+  })
+
+  it("keeps the active tab", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old })],
+      activeTabId: 1,
+    })
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1] })
+
+    expect(result.discarded).toEqual([])
+    expect(result.skipped).toEqual([1])
+  })
+
+  it("keeps pinned tabs by default", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old, pinned: true })],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1] })
+
+    expect(result.discarded).toEqual([])
+    expect(result.skipped).toEqual([1])
+  })
+
+  it("keeps tabs playing audio by default", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old, audible: true })],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1] })
+
+    expect(result.discarded).toEqual([])
+    expect(result.skipped).toEqual([1])
+  })
+
+  it("unloads pinned and playing tabs when the settings allow it", async () => {
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old, pinned: true }),
+        tab(2, "https://b.com", { lastAccessed: old, audible: true }),
+      ],
+      activeTabId: 99,
+      settings: { ignorePinnedWhenClosing: false, skipAudibleWhenDiscarding: false },
+    })
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1, 2] })
+
+    expect(result.discarded).toEqual([1, 2])
+  })
+
+  it("keeps tabs that are not stale", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: Date.now() })],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1] })
+
+    expect(result.discarded).toEqual([])
+    expect(result.skipped).toEqual([1])
+  })
+
+  it("keeps tabs that are already unloaded", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old, discarded: true })],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1] })
+
+    expect(result.discarded).toEqual([])
+    expect(result.skipped).toEqual([1])
+  })
+
+  it("counts a refusal as skipped", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old })],
+      activeTabId: 99,
+    })
+    fake.state.discardRefusals.add(1)
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1] })
+
+    expect(result.discarded).toEqual([])
+    expect(result.skipped).toEqual([1])
+  })
+
+  it("counts a failure as skipped", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old })],
+      activeTabId: 99,
+    })
+    fake.state.failNextDiscard = true
+
+    const result = await fake.send({ type: "tabs:discard", ids: [1] })
+
+    expect(result.discarded).toEqual([])
+    expect(result.skipped).toEqual([1])
+  })
+
+  it("skips ids that no longer exist", async () => {
+    const fake = await bootWorker({ tabs: [], activeTabId: 99 })
+
+    const result = await fake.send({ type: "tabs:discard", ids: [999] })
+
+    expect(result.discarded).toEqual([])
+    expect(result.skipped).toEqual([999])
+  })
+
+  it("rejects a request that is not a list of ids", async () => {
+    const fake = await bootWorker({ tabs: [], activeTabId: 99 })
+
+    for (const ids of [undefined, 5, "12", [null]]) {
+      const result = await fake.send({ type: "tabs:discard", ids })
+      expect(result.type).toBe("error")
+    }
+  })
+})
+
 describe("settings:get", () => {
   it("returns defaults when nothing is stored", async () => {
     const fake = await bootWorker({ tabs: [] })
@@ -227,10 +469,7 @@ describe("settings:get", () => {
     const result = await fake.send({ type: "settings:get" })
 
     expect(result.type).toBe("settings")
-    expect(result.settings).toEqual({
-      ignorePinnedWhenClosing: true,
-      confirmBeforeClosing: true,
-    })
+    expect(result.settings).toEqual(DEFAULT_SETTINGS)
   })
 
   it("merges stored values over defaults", async () => {
@@ -250,10 +489,7 @@ describe("settings:get", () => {
 
     const result = await fake.send({ type: "settings:get" })
 
-    expect(result.settings).toEqual({
-      ignorePinnedWhenClosing: true,
-      confirmBeforeClosing: true,
-    })
+    expect(result.settings).toEqual(DEFAULT_SETTINGS)
   })
 
   it("ignores a stored value of the wrong type", async () => {
@@ -290,10 +526,7 @@ describe("settings:set", () => {
 
     await fake.send({ type: "settings:set", patch: "ab" })
 
-    expect(fake.state.settings).toEqual({
-      ignorePinnedWhenClosing: true,
-      confirmBeforeClosing: true,
-    })
+    expect(fake.state.settings).toEqual(DEFAULT_SETTINGS)
   })
 
   it("does not store a value of the wrong type", async () => {

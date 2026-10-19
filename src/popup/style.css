@@ -8,6 +8,8 @@
   --muted: #9aa3b2;
   --border: #262b36;
   --accent: #4f8cff;
+  --warn: #e0a34a;
+  --hot: #e2725b;
 }
 
 * {
@@ -154,7 +156,7 @@ footer.bar {
   display: none;
 }
 
-#confirm-text {
+.confirm-text {
   flex: 1;
 }
 
@@ -166,7 +168,7 @@ footer.bar {
 
 .stat {
   flex: 1;
-  padding: 8px;
+  padding: 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--panel);
@@ -175,6 +177,11 @@ footer.bar {
 .stat b {
   display: block;
   font-size: 18px;
+}
+
+/* Four cards have to fit in 360px, so the caption is a size down. */
+.stat .hint {
+  font-size: 11px;
 }
 
 .list {
@@ -283,4 +290,80 @@ button.link {
   background: none;
   color: var(--muted);
   padding: 0;
+}
+/* A row in the Heaviest tabs list. */
+.weight-item {
+  align-items: flex-start;
+}
+
+.weight-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.weight-text .title {
+  display: block;
+}
+
+.weight-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* A thin bar that shows the estimate at a glance. */
+.meter {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--muted);
+}
+
+.badge.weight-fresh {
+  color: var(--muted);
+}
+
+.badge.weight-warm {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.badge.weight-heavy {
+  color: var(--hot);
+  border-color: var(--hot);
+}
+
+.meter-fill.weight-fresh {
+  background: var(--muted);
+}
+
+.meter-fill.weight-warm {
+  background: var(--warn);
+}
+
+.meter-fill.weight-heavy {
+  background: var(--hot);
+}
+
+.row input[type="number"] {
+  width: 80px;
+}
+
+button.small {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.note {
+  margin: 8px 0 0;
 }

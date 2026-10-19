@@ -1,5 +1,6 @@
 import { groupDuplicates, normalizeUrl, originOf } from "../lib/tab.js"
 import { STORAGE_KEYS, normalizeSettings, pickSettings } from "../lib/messages.js"
+import { idleDays, isStale, reclaimableIds, weightScore } from "../lib/weight.js"
 
 // Converts a chrome.tabs.Tab object to a record suitable for storage and comparison. Returns null if the tab is invalid (e.g. missing an ID or URL).
 function toRecord(tab) {
@@ -39,12 +40,48 @@ async function readSettings() {
   return normalizeSettings(stored[STORAGE_KEYS.settings])
 }
 
+// The tab the user is looking at, which is never closed and never unloaded.
+async function queryActiveTab() {
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  return activeTab
+}
+
 // Handles a message from the extension pages and returns a response. The response is sent asynchronously via sendResponse, so this function returns a promise.
 async function handle(request) {
   switch (request?.type) {
     case "audit:get": {
-      const tabs = await queryRecords()
-      return { type: "audit", tabs, groups: groupDuplicates(tabs) }
+      const settings = await readSettings()
+      const now = Date.now()
+      const records = await queryRecords()
+      const groups = groupDuplicates(records)
+      const activeTab = await queryActiveTab()
+
+      // Being a duplicate is a fact about the whole set, not about one tab.
+      const duplicateIds = new Set(
+        groups.flatMap((group) => group.tabs.map((tab) => tab.id)),
+      )
+
+      const tabs = records.map((record) => ({
+        ...record,
+        duplicate: duplicateIds.has(record.id),
+        weight: weightScore(record, now, { staleAfterDays: settings.staleAfterDays }),
+        idleDays: idleDays(record, now),
+      }))
+
+      const reclaimable = reclaimableIds(tabs, now, {
+        activeTabId: activeTab?.id,
+        skipPinned: settings.ignorePinnedWhenClosing,
+        skipAudible: settings.skipAudibleWhenDiscarding,
+        staleAfterDays: settings.staleAfterDays,
+      })
+
+      return {
+        type: "audit",
+        tabs,
+        groups,
+        reclaimable,
+        staleAfterDays: settings.staleAfterDays,
+      }
     }
 
     case "tabs:close": {
@@ -59,7 +96,7 @@ async function handle(request) {
 
       // Build a map of the current tabs so we can check if the requested IDs are still alive.
       const live = new Map((await queryRecords()).map((tab) => [tab.id, tab]))
-      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      const activeTab = await queryActiveTab()
 
       const close = []
       const skipped = []
@@ -96,6 +133,67 @@ async function handle(request) {
       }
 
       return { type: "tabs:closed", closed, skipped }
+    }
+
+    case "tabs:discard": {
+      const settings = await readSettings()
+
+      if (!Array.isArray(request.ids) || request.ids.some((id) => !Number.isInteger(id))) {
+        return { type: "error", message: "tabs:discard needs a list of whole tab ids" }
+      }
+
+      const wanted = [...new Set(request.ids)]
+      const now = Date.now()
+      const live = new Map((await queryRecords()).map((tab) => [tab.id, tab]))
+      const activeTab = await queryActiveTab()
+
+      const discarded = []
+      const skipped = []
+
+      for (const id of wanted) {
+        const tab = live.get(id)
+
+        if (!tab) {
+          skipped.push(id)
+          continue
+        }
+        if (tab.discarded) {
+          skipped.push(id)
+          continue
+        }
+        if (activeTab?.id === id) {
+          skipped.push(id)
+          continue
+        }
+        // The pinned setting covers closing and unloading, one switch for both.
+        if (settings.ignorePinnedWhenClosing && tab.pinned) {
+          skipped.push(id)
+          continue
+        }
+        if (settings.skipAudibleWhenDiscarding && tab.audible) {
+          skipped.push(id)
+          continue
+        }
+        if (!isStale(tab, now, settings.staleAfterDays)) {
+          skipped.push(id)
+          continue
+        }
+
+        try {
+          // chrome.tabs.discard resolves with the tab, or with nothing when it
+          // refused, so the return value is the only honest check.
+          const result = await chrome.tabs.discard(id)
+          if (result) {
+            discarded.push(id)
+          } else {
+            skipped.push(id)
+          }
+        } catch {
+          skipped.push(id)
+        }
+      }
+
+      return { type: "tabs:discarded", discarded, skipped }
     }
 
     case "settings:get":

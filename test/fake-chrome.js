@@ -6,7 +6,7 @@
 // object with the same shape, which lets us drive the worker from a test.
 //
 // It deliberately implements ONLY what the worker uses:
-//   chrome.tabs.query, chrome.tabs.remove
+//   chrome.tabs.query, chrome.tabs.remove, chrome.tabs.discard
 //   chrome.storage.local.get, chrome.storage.local.set
 //   chrome.runtime.onMessage.addListener
 //
@@ -18,9 +18,12 @@ export function createFakeChrome(options = {}) {
     tabs: [...(options.tabs ?? [])],
     settings: options.settings ?? null,
     removed: [],
+    discarded: [],
     queries: [],
     activeTabId: options.activeTabId ?? null,
     failNextRemove: false,
+    failNextDiscard: false,
+    discardRefusals: new Set(),
   }
 
   let listener = null
@@ -52,6 +55,27 @@ export function createFakeChrome(options = {}) {
 
         state.tabs.splice(index, 1)
         state.removed.push(id)
+      },
+
+      async discard(id) {
+        if (state.failNextDiscard) {
+          state.failNextDiscard = false
+          throw new Error("No tab with id: " + id)
+        }
+
+        const index = state.tabs.findIndex((tab) => tab.id === id)
+        if (index === -1) {
+          throw new Error("No tab with id: " + id)
+        }
+
+        // Chrome resolves with the tab, or with nothing when it refuses.
+        if (state.discardRefusals.has(id)) return undefined
+        if (state.tabs[index].discarded) return undefined
+        if (state.activeTabId === id) return undefined
+
+        state.tabs[index] = { ...state.tabs[index], discarded: true }
+        state.discarded.push(id)
+        return state.tabs[index]
       },
     },
 
