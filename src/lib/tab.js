@@ -28,14 +28,17 @@ function bareHost(hostname) {
   return hostname.replace(/^www\./, "").toLowerCase()
 }
 
-// Normalizes a URL to a canonical form for duplicate detection. Youtube URLs are normalized to the video ID, and tracking parameters are stripped from other URLs. Non-HTTP(S) URLs are normalized to a scheme://host/path form.
+// Normalizes a URL to a canonical form for duplicate detection. Youtube URLs are normalized to the video ID, and tracking parameters are stripped from other URLs. Non-HTTP(S) URLs are normalized to a scheme://host/path form. The port stays in the key, so two servers on the same machine are two different pages.
 export function normalizeUrl(rawUrl) {
+  // A non string url cannot come from Chrome, but this has to survive it.
+  const text = typeof rawUrl === "string" ? rawUrl : ""
+
   let url
 
   try {
-    url = new URL(rawUrl)
+    url = new URL(text)
   } catch {
-    return `raw:${rawUrl.trim().toLowerCase()}`
+    return `raw:${text.trim().toLowerCase()}`
   }
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
@@ -43,14 +46,16 @@ export function normalizeUrl(rawUrl) {
     return `scheme:${url.protocol}//${bareHost(url.host)}${url.pathname}`.toLowerCase()
   }
 
-  const host = bareHost(url.hostname)
+  // The host keeps the port, the site does not.
+  const host = bareHost(url.host)
+  const site = bareHost(url.hostname)
 
-  if (host === "youtu.be") {
+  if (site === "youtu.be") {
     const id = url.pathname.slice(1)
-    return id ? `yt:${id}` : `url:${host}/`
+    return id ? `yt:${id}` : `url:${site}/`
   }
 
-  if (host === "youtube.com" || host.endsWith(".youtube.com")) {
+  if (site === "youtube.com" || site.endsWith(".youtube.com")) {
     if (url.pathname === "/watch") {
       const id = url.searchParams.get("v")
       if (id) return `yt:${id}`
@@ -65,12 +70,10 @@ export function normalizeUrl(rawUrl) {
     url.searchParams.delete(param)
   }
 
-  url.hash = ""
-  url.hostname = host
-
   const path = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : url.pathname
   const query = url.searchParams.toString()
 
+  // The path is lowercased with everything else, so case only paths match.
   return `url:${host}${path}${query ? `?${query}` : ""}`.toLowerCase()
 }
 
@@ -94,9 +97,14 @@ export function keeperOrder(a, b) {
 
 // Groups tabs pointing at the same page, biggest group first.
 export function groupDuplicates(tabs) {
+  if (!Array.isArray(tabs)) return []
+
   const buckets = new Map()
 
   for (const tab of tabs) {
+    // A record without a usable key cannot be compared with anything.
+    if (!tab || typeof tab.normalizedUrl !== "string") continue
+
     const bucket = buckets.get(tab.normalizedUrl)
     if (bucket) {
       bucket.push(tab)
@@ -125,10 +133,14 @@ export function groupDuplicates(tabs) {
 
 // Returns the total number of closable tabs in a list of groups.
 export function closableCount(groups) {
-  return groups.reduce((sum, group) => sum + group.closable.length, 0)
+  if (!Array.isArray(groups)) return 0
+  return groups.reduce((sum, group) => sum + (group?.closable?.length ?? 0), 0)
 }
 
 // Returns a flat list of the IDs of all closable tabs in a list of groups.
 export function closableIds(groups) {
-  return groups.flatMap((group) => group.closable.map((tab) => tab.id))
+  if (!Array.isArray(groups)) return []
+  return groups.flatMap((group) =>
+    Array.isArray(group?.closable) ? group.closable.map((tab) => tab.id) : [],
+  )
 }

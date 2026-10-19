@@ -1,16 +1,24 @@
-/**
- * @param {object} deps
- * @param {{update: Function, get: Function}} deps.tabs chrome.tabs subset
- * @param {{get: Function, update: Function}} deps.windows chrome.windows subset
- * @param {{id: number, windowId?: number}} tab
- * @returns {Promise<{ok: boolean, focusedTab: boolean, focusedWindow: boolean, error?: string}>}
- */
+const TIMEOUT_MS = 3000
 
-export async function focusTab({ tabs, windows }, tab) {
+export async function focusTab(deps, tab, timeoutMs = TIMEOUT_MS) {
   const result = { ok: false, focusedTab: false, focusedWindow: false }
 
+  if (!deps || !deps.tabs || typeof deps.tabs.update !== "function") {
+    result.error = "The tabs API is not available"
+    return result
+  }
+
+  if (!tab || typeof tab.id !== "number") {
+    result.error = "That tab is gone"
+    return result
+  }
+
   try {
-    await tabs.update(tab.id, { active: true })
+    await withTimeout(
+      deps.tabs.update(tab.id, { active: true }),
+      timeoutMs,
+      "The tab did not answer",
+    )
     result.focusedTab = true
   } catch (error) {
     result.error = describe(error)
@@ -23,14 +31,27 @@ export async function focusTab({ tabs, windows }, tab) {
     return result
   }
 
+  if (!deps.windows || typeof deps.windows.get !== "function") {
+    result.ok = true
+    return result
+  }
+
   try {
-    const win = await windows.get(tab.windowId)
-    if (win.focused) {
+    const win = await withTimeout(
+      deps.windows.get(tab.windowId),
+      timeoutMs,
+      "The window did not answer",
+    )
+    if (!win || win.focused) {
       // Already in front, nothing to raise.
       result.ok = true
       return result
     }
-    await windows.update(tab.windowId, { focused: true })
+    await withTimeout(
+      deps.windows.update(tab.windowId, { focused: true }),
+      timeoutMs,
+      "The window did not answer",
+    )
     result.focusedWindow = true
     result.ok = true
   } catch (error) {
@@ -42,6 +63,18 @@ export async function focusTab({ tabs, windows }, tab) {
   }
 
   return result
+}
+
+// Fails the promise when it takes too long, so a stuck API cannot leave the
+// popup waiting for ever.
+function withTimeout(promise, ms, message) {
+  let timer = null
+
+  const guard = new Promise((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms)
+  })
+
+  return Promise.race([promise, guard]).finally(() => clearTimeout(timer))
 }
 
 function describe(error) {

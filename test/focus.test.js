@@ -112,4 +112,43 @@ describe("focusTab", () => {
     expect(result.ok).toBe(false)
     expect(result.error).toBe("plain string failure")
   })
+
+  it("does not throw when the tabs API is missing", async () => {
+    const result = await focusTab(null, { id: 7 })
+
+    expect(result.ok).toBe(false)
+    expect(result.error).toBe("The tabs API is not available")
+  })
+
+  it("does not throw when the tab is missing", async () => {
+    const deps = fakeDeps()
+
+    const result = await focusTab(deps, undefined)
+
+    expect(result.ok).toBe(false)
+    expect(result.error).toBe("That tab is gone")
+  })
+
+  it("gives up on a tab update that never answers", async () => {
+    const deps = {
+      tabs: { update: () => new Promise(() => {}) },
+      windows: { async get() {}, async update() {} },
+    }
+
+    const result = await focusTab(deps, { id: 1 }, 20)
+
+    expect(result.ok).toBe(false)
+    expect(result.focusedTab).toBe(false)
+    expect(result.error).toBe("The tab did not answer")
+  })
+
+  it("does not throw when the window lookup returns nothing", async () => {
+    const deps = fakeDeps()
+    deps.windows.get = async () => null
+
+    const result = await focusTab(deps, { id: 7, windowId: 3 })
+
+    expect(result.ok).toBe(true)
+    expect(result.error).toBeUndefined()
+  })
 })

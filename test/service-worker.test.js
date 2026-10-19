@@ -70,6 +70,16 @@ describe("audit:get", () => {
     expect(result.tabs[0].id).toBe(3)
   })
 
+  it("keeps a null lastAccessed when Chrome does not report one", async () => {
+    const fake = await bootWorker({
+      tabs: [{ id: 1, url: "https://a.com", title: "old" }],
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.tabs[0].lastAccessed).toBe(null)
+  })
+
   it("groups urls that differ only by tracking params", async () => {
     const fake = await bootWorker({
       tabs: [tab(1, "https://a.com/p?utm_source=news"), tab(2, "https://a.com/p")],
@@ -161,6 +171,44 @@ describe("tabs:close", () => {
     expect(fake.state.tabs.map((t) => t.id)).toEqual([1])
   })
 
+  it("counts only the tabs that were really closed", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com"), tab(2, "https://a.com"), tab(3, "https://a.com")],
+      activeTabId: 99,
+    })
+
+    fake.state.failNextRemove = true
+
+    const result = await fake.send({ type: "tabs:close", ids: [1, 2, 3] })
+
+    expect(result.closed).toEqual([2, 3])
+    expect(result.skipped).toEqual([1])
+    expect(fake.state.removed).toEqual([2, 3])
+  })
+
+  it("closes a repeated id once", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com")],
+      activeTabId: 99,
+    })
+
+    const result = await fake.send({ type: "tabs:close", ids: [1, 1, 1] })
+
+    expect(result.closed).toEqual([1])
+    expect(fake.state.removed).toEqual([1])
+  })
+
+  it("rejects a request that is not a list of ids", async () => {
+    const fake = await bootWorker({ tabs: [tab(1, "https://a.com")] })
+
+    for (const ids of [undefined, 5, "12", [null], [{}]]) {
+      const result = await fake.send({ type: "tabs:close", ids })
+      expect(result.type).toBe("error")
+    }
+
+    expect(fake.state.removed).toEqual([])
+  })
+
   it("does nothing for an empty id list", async () => {
     const fake = await bootWorker({ tabs: [tab(1, "https://a.com")], activeTabId: 1 })
 
@@ -196,6 +244,28 @@ describe("settings:get", () => {
     expect(result.settings.ignorePinnedWhenClosing).toBe(false)
     expect(result.settings.confirmBeforeClosing).toBe(true)
   })
+
+  it("ignores a stored value that is not an object", async () => {
+    const fake = await bootWorker({ tabs: [], settings: "garbage" })
+
+    const result = await fake.send({ type: "settings:get" })
+
+    expect(result.settings).toEqual({
+      ignorePinnedWhenClosing: true,
+      confirmBeforeClosing: true,
+    })
+  })
+
+  it("ignores a stored value of the wrong type", async () => {
+    const fake = await bootWorker({
+      tabs: [],
+      settings: { ignorePinnedWhenClosing: "no" },
+    })
+
+    const result = await fake.send({ type: "settings:get" })
+
+    expect(result.settings.ignorePinnedWhenClosing).toBe(true)
+  })
 })
 
 describe("settings:set", () => {
@@ -213,6 +283,28 @@ describe("settings:set", () => {
     expect(result.settings.confirmBeforeClosing).toBe(false)
     expect(result.settings.ignorePinnedWhenClosing).toBe(true)
     expect(fake.state.settings.confirmBeforeClosing).toBe(false)
+  })
+
+  it("does not store a patch that is not an object", async () => {
+    const fake = await bootWorker({ tabs: [] })
+
+    await fake.send({ type: "settings:set", patch: "ab" })
+
+    expect(fake.state.settings).toEqual({
+      ignorePinnedWhenClosing: true,
+      confirmBeforeClosing: true,
+    })
+  })
+
+  it("does not store a value of the wrong type", async () => {
+    const fake = await bootWorker({ tabs: [] })
+
+    const result = await fake.send({
+      type: "settings:set",
+      patch: { confirmBeforeClosing: "no" },
+    })
+
+    expect(result.settings.confirmBeforeClosing).toBe(true)
   })
 })
 
@@ -240,5 +332,14 @@ describe("the message channel", () => {
     const result = await fake.send(null)
 
     expect(result.type).toBe("error")
+  })
+
+  it("gives a readable error for a message with no type", async () => {
+    const fake = await bootWorker({ tabs: [] })
+
+    const result = await fake.send(undefined)
+
+    expect(result.type).toBe("error")
+    expect(result.message).toContain("Unknown message type")
   })
 })

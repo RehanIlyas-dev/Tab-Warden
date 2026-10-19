@@ -87,6 +87,33 @@ describe("normalizeUrl", () => {
     expect(normalizeUrl("not a url")).toBe("raw:not a url")
   })
 
+  it("does not throw on a url that is missing", () => {
+    expect(() => normalizeUrl(undefined)).not.toThrow()
+    expect(normalizeUrl(undefined)).toBe("raw:")
+  })
+
+  it("does not throw on a url that is not a string", () => {
+    expect(() => normalizeUrl(null)).not.toThrow()
+    expect(() => normalizeUrl(123)).not.toThrow()
+    expect(() => normalizeUrl(true)).not.toThrow()
+    expect(() => normalizeUrl(Symbol("url"))).not.toThrow()
+    expect(() => normalizeUrl({})).not.toThrow()
+  })
+
+  it("keeps the port, so two servers on one machine stay apart", () => {
+    expect(normalizeUrl("http://localhost:3000/dashboard")).toBe("url:localhost:3000/dashboard")
+    expect(normalizeUrl("http://localhost:8080/dashboard")).toBe("url:localhost:8080/dashboard")
+  })
+
+  it("keeps a port that is not the default one", () => {
+    expect(normalizeUrl("https://a.com:8443/x")).toBe("url:a.com:8443/x")
+  })
+
+  it("drops the default port, because it says nothing extra", () => {
+    expect(normalizeUrl("https://a.com:443/x")).toBe("url:a.com/x")
+    expect(normalizeUrl("http://a.com:80/x")).toBe("url:a.com/x")
+  })
+
   it("trims and lowercases the garbage fallback", () => {
     expect(normalizeUrl("  NOT A URL  ")).toBe("raw:not a url")
   })
@@ -239,6 +266,17 @@ describe("groupDuplicates", () => {
   it("handles a single tab", () => {
     expect(groupDuplicates([tab(1, "https://a.com")])).toEqual([])
   })
+
+  it("returns nothing for input that is not a list", () => {
+    expect(groupDuplicates(undefined)).toEqual([])
+    expect(groupDuplicates(null)).toEqual([])
+    expect(groupDuplicates({})).toEqual([])
+  })
+
+  it("skips records it cannot read", () => {
+    expect(groupDuplicates([null, null])).toEqual([])
+    expect(groupDuplicates([{ id: 1 }, { id: 2 }])).toEqual([])
+  })
 })
 
 describe("closableCount", () => {
@@ -255,6 +293,11 @@ describe("closableCount", () => {
       tab(5, "https://b.com"),
     ])
     expect(closableCount(groups)).toBe(3)
+  })
+
+  it("is zero for input that is not a list", () => {
+    expect(closableCount(undefined)).toBe(0)
+    expect(closableCount([{}])).toBe(0)
   })
 })
 
@@ -282,5 +325,10 @@ describe("closableIds", () => {
 
   it("is empty when there are no groups", () => {
     expect(closableIds([])).toEqual([])
+  })
+
+  it("is empty for input that is not a list", () => {
+    expect(closableIds(undefined)).toEqual([])
+    expect(closableIds([{}])).toEqual([])
   })
 })

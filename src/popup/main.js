@@ -1,4 +1,4 @@
-import { closableIds } from "../lib/tab.js"
+import { closableCount, closableIds } from "../lib/tab.js"
 import { focusTab } from "../lib/focus.js"
 
 const $ = (selector) => document.querySelector(selector)
@@ -7,16 +7,28 @@ async function askWorker(request) {
   return chrome.runtime.sendMessage(request)
 }
 
-// Ids the user has agreed to close, or null when no confirmation is pending.Show
-// Kept at module scope so the confirm row and the close handler agree.
 let pendingIds = null
-
-function totalClosable(groups) {
-  return groups.reduce((sum, group) => sum + group.closable.length, 0)
-}
+let inFlight = false
+let closing = false
+let closable = 0
 
 function plural(count, word) {
   return `${count} ${word}${count === 1 ? "" : "s"}`
+}
+
+// The button has three jobs, so its label and its disabled state are worked
+// out in one place.
+function updateButton() {
+  const button = $("#close-duplicates")
+  button.disabled = inFlight || closing || (closable === 0 && pendingIds === null)
+
+  if (closing) {
+    button.textContent = "Closing..."
+  } else if (pendingIds !== null) {
+    button.textContent = "Confirm close"
+  } else {
+    button.textContent = "Close duplicates"
+  }
 }
 
 function renderStats(tabs, groups, closable) {
@@ -204,9 +216,8 @@ async function goToTab(tab) {
 }
 
 function setBusy(busy) {
-  const button = $("#close-duplicates")
-  button.disabled = busy
-  button.textContent = busy ? "Closing..." : "Close duplicates"
+  closing = busy
+  updateButton()
 }
 
 // The confirm row lives inside the popup instead of using window.confirm,
@@ -215,13 +226,13 @@ function showConfirm(ids) {
   pendingIds = ids
   $("#confirm-bar").hidden = false
   $("#confirm-text").textContent = `Close ${plural(ids.length, "duplicate tab")}?`
-  $("#close-duplicates").textContent = "Confirm close"
+  updateButton()
 }
 
 function clearConfirm() {
   pendingIds = null
   $("#confirm-bar").hidden = true
-  $("#close-duplicates").textContent = "Close duplicates"
+  updateButton()
 }
 
 function describeClose(result) {
@@ -250,6 +261,12 @@ async function doClose(ids) {
     const result = await askWorker({ type: "tabs:close", ids })
     clearConfirm()
     await refresh()
+
+    if (result.type === "error") {
+      setSummary(result.message)
+      return
+    }
+
     setSummary(describeClose(result))
   } catch (error) {
     clearConfirm()
@@ -260,33 +277,45 @@ async function doClose(ids) {
 }
 
 async function closeDuplicates() {
-  const response = await readAudit()
+  if (inFlight) return
 
-  if (response.type === "error") {
-    setSummary(response.message)
-    return
+  inFlight = true
+  updateButton()
+
+  try {
+    const response = await readAudit()
+
+    if (response.type === "error") {
+      setSummary(response.message)
+      return
+    }
+
+    const ids = closableIds(response.groups)
+
+    if (ids.length === 0) {
+      setSummary("Nothing to close.")
+      return
+    }
+
+    const settings = await askWorker({ type: "settings:get" })
+
+    if (settings.type === "error") {
+      setSummary(settings.message)
+      return
+    }
+
+    if (!settings.settings.confirmBeforeClosing) {
+      await doClose(ids)
+      return
+    }
+
+    showConfirm(ids)
+  } catch (error) {
+    setSummary(`Could not read tabs: ${error.message}`)
+  } finally {
+    inFlight = false
+    updateButton()
   }
-
-  const ids = closableIds(response.groups)
-
-  if (ids.length === 0) {
-    setSummary("Nothing to close.")
-    return
-  }
-
-  const settings = await askWorker({ type: "settings:get" })
-
-  if (settings.type === "error") {
-    setSummary(settings.message)
-    return
-  }
-
-  if (!settings.settings.confirmBeforeClosing) {
-    await doClose(ids)
-    return
-  }
-
-  showConfirm(ids)
 }
 
 async function refresh() {
@@ -297,7 +326,7 @@ async function refresh() {
     return
   }
 
-  const closable = totalClosable(response.groups)
+  closable = closableCount(response.groups)
 
   // Every id that belongs to a group of 2 or more. A group's keeper counts as a
   // duplicate too, since it shares its URL with the others.
@@ -311,7 +340,7 @@ async function refresh() {
   renderStats(response.tabs, response.groups, closable)
   renderDuplicates(response.groups)
   renderAllTabs(response.tabs, duplicateIds)
-  $("#close-duplicates").disabled = closable === 0
+  updateButton()
 
   if (pendingIds === null && closable === 0) {
     setSummary("Nothing to close.")
