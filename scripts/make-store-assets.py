@@ -26,6 +26,8 @@ TEXT = (230, 232, 238)
 MUTED = (154, 163, 178)
 BORDER = (38, 43, 54)
 ACCENT = (79, 140, 255)
+WARN = (224, 163, 74)
+HOT = (226, 114, 91)
 
 REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -150,14 +152,14 @@ def make_screenshot():
     brand_row(img, left, 62, 44, 24)
 
     headline = load_font(52, True)
-    draw.text((left, 150), "Duplicate tabs,", font=headline, fill=TEXT)
-    draw.text((left, 212), "found and closed.", font=headline, fill=TEXT)
+    draw.text((left, 150), "Find the copies.", font=headline, fill=TEXT)
+    draw.text((left, 212), "Unload the idle ones.", font=headline, fill=TEXT)
 
     body_end = paragraph(
         draw,
         (left, 312),
-        "Tab Warden finds the same page opened from different links, lists every tab "
-        "grouped by site, and closes the copies you pick while keeping what matters.",
+        "Tab Warden finds the same page opened from different links, lists every tab grouped "
+        "by site, and frees the tabs you have not touched in days.",
         load_font(21),
         MUTED,
         600,
@@ -169,8 +171,8 @@ def make_screenshot():
         (left, body_end + 38),
         [
             "Finds copies even when the tracking links differ",
-            "Every open tab grouped by site",
-            "Pinned tabs and the active tab are never closed",
+            "Shows the tabs that have been sitting idle",
+            "Unloads them without closing them",
         ],
         load_font(20),
         TEXT,
@@ -179,7 +181,7 @@ def make_screenshot():
     draw.text((left, 700), "Runs on your device. No network calls, no analytics.", font=load_font(16), fill=MUTED)
 
     card_h = 744
-    card_w = round(720 * card_h / 1280)
+    card_w = popup_image(card_h).width
     popup_card(img, 1280 - 80 - card_w, 28, card_h)
 
     img.convert("RGB").save(OUT / "screenshot-1.png")
@@ -190,7 +192,7 @@ def make_promo():
     draw = ImageDraw.Draw(img)
 
     brand_row(img, 32, 34, 56, 27)
-    draw.text((32, 146), "Find and close duplicate tabs.", font=load_font(17), fill=TEXT)
+    draw.text((32, 146), "Find duplicates, free memory.", font=load_font(17), fill=TEXT)
     draw.text((32, 174), "Grouped by site. Pinned tabs kept.", font=load_font(17), fill=MUTED)
 
     img.convert("RGB").save(OUT / "promo-440x280.png")
@@ -204,14 +206,14 @@ def make_marquee():
     brand_row(img, left, 62, 48, 26)
 
     headline = load_font(54, True)
-    draw.text((left, 176), "Duplicate tabs,", font=headline, fill=TEXT)
-    draw.text((left, 240), "found and closed.", font=headline, fill=TEXT)
+    draw.text((left, 176), "Find the copies.", font=headline, fill=TEXT)
+    draw.text((left, 240), "Unload the idle ones.", font=headline, fill=TEXT)
 
     paragraph(
         draw,
         (left, 340),
-        "Finds the same page opened from different links, groups every tab by site, "
-        "and closes the copies while keeping your pinned tabs.",
+        "Finds the same page opened from different links, groups every tab by site, and "
+        "unloads the tabs you have not touched in days.",
         load_font(21),
         MUTED,
         640,
@@ -219,7 +221,7 @@ def make_marquee():
     )
 
     card_h = 480
-    card_w = round(720 * card_h / 1280)
+    card_w = popup_image(card_h).width
     popup_card(img, 1400 - 90 - card_w, 40, card_h)
 
     img.convert("RGB").save(OUT / "marquee-1400x560.png")

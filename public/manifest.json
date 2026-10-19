@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Tab Warden",
-  "version": "0.1.1",
-  "description": "Finds duplicate tabs by URL, lists every open tab grouped by site, and closes the copies you no longer need.",
+  "version": "0.2.0",
+  "description": "Finds duplicate tabs by URL, lists every open tab grouped by site, closes the copies, and unloads the tabs you left idle.",
   "minimum_chrome_version": "120",
   "permissions": [
     "tabs",

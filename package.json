@@ -1,8 +1,8 @@
 {
   "name": "tab-warden",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
-  "description": "Chrome extension that finds duplicate tabs by normalized URL, collapses YouTube video ids and tracking-param variants, and lists every open tab grouped by site. Refuses to close the active tab or pinned tabs.",
+  "description": "Finds duplicate tabs by URL, lists every open tab grouped by site, closes the copies, and unloads the tabs you left idle.",
   "type": "module",
   "engines": {
     "chrome": ">=120"
@@ -12,7 +12,7 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "package": "vite build && cd dist && zip -r ../tab-warden-0.1.1.zip . -x '.*'",
+    "package": "vite build && cd dist && zip -r ../tab-warden-0.2.0.zip . -x '.*'",
     "icons": "python3 scripts/make-icons.py",
     "store-assets": "python3 scripts/make-store-assets.py"
   },

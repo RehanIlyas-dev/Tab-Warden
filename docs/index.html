@@ -58,8 +58,9 @@
 
       <p>
         Tab Warden is a Chrome extension that finds duplicate tabs, lists every open tab
-        grouped by site, and closes the copies you choose to remove. This page explains
-        what it reads, what it stores, and what it does not do.
+        grouped by site, closes the copies you choose to remove, and unloads the tabs you
+        have not used. This page explains what it reads, what it stores, and what it does
+        not do.
       </p>
 
       <h2>What the extension reads</h2>
@@ -68,6 +69,7 @@
         <li>Whether a tab is pinned, playing audio, or already unloaded, so it can pick which copy to keep.</li>
         <li>Which window a tab belongs to, so it can bring that window forward when you click a row.</li>
         <li>Which tab you are currently looking at, so it never closes it.</li>
+        <li>When a tab was last used, so it can tell you which ones have been sitting idle.</li>
       </ul>
       <p>
         This information is requested from Chrome each time the popup opens. It is held in
@@ -76,11 +78,13 @@
 
       <h2>What the extension stores</h2>
       <p>
-        Two preferences are saved on your device with <code>chrome.storage.local</code>:
+        Four preferences are saved on your device with <code>chrome.storage.local</code>:
       </p>
       <ul>
-        <li><code>ignorePinnedWhenClosing</code>, whether pinned tabs are skipped when closing duplicates.</li>
+        <li><code>ignorePinnedWhenClosing</code>, whether pinned tabs are skipped when closing or unloading.</li>
         <li><code>confirmBeforeClosing</code>, whether a confirmation row appears before closing.</li>
+        <li><code>staleAfterDays</code>, how many days a tab has to be unused before it counts as idle.</li>
+        <li><code>skipAudibleWhenDiscarding</code>, whether tabs playing audio are left alone.</li>
       </ul>
       <p>
         Nothing else is stored. No tab titles, URLs, or browsing history are saved.
@@ -98,11 +102,12 @@
       <h2>Permissions</h2>
       <ul>
         <li>
-          <code>tabs</code>: read the URL and title of open tabs. Without this permission,
-          Chrome only exposes tab identifiers, which are not enough to find duplicates.
+          <code>tabs</code>: read the URL, title, and last used time of open tabs. Without this
+          permission, Chrome only exposes tab identifiers, which are not enough to find
+          duplicates or to tell which tabs have been left idle.
         </li>
         <li>
-          <code>storage</code>: save the two preferences listed above on this device.
+          <code>storage</code>: save the four preferences listed above on this device.
         </li>
       </ul>
       <p>No other permissions are requested.</p>
