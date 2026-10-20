@@ -94,6 +94,17 @@ npm run build
 Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**,
 and select the `dist/` folder.
 
+### Extracting the archive on Linux
+
+If you downloaded a `.tar.gz` archive instead of a zip:
+
+```sh
+tar -xzf tab-warden-0.2.0.tar.gz
+```
+
+`-x` extracts, `-z` decompresses gzip, and `-f` names the file. The unpacked folder
+goes straight into `chrome://extensions` with Developer mode on.
+
 ### Web Store
 
 Not published yet.
