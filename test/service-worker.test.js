@@ -71,6 +71,17 @@ describe("audit:get", () => {
     expect(result.tabs[0].id).toBe(3)
   })
 
+  it("survives a tab that is missing entirely", async () => {
+    const fake = await bootWorker({
+      tabs: [null, undefined, tab(3, "https://c.com")],
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.type).toBe("audit")
+    expect(result.tabs).toHaveLength(1)
+  })
+
   it("keeps a null lastAccessed when Chrome does not report one", async () => {
     const fake = await bootWorker({
       tabs: [{ id: 1, url: "https://a.com", title: "old" }],
@@ -502,6 +513,22 @@ describe("settings:get", () => {
 
     expect(result.settings.ignorePinnedWhenClosing).toBe(true)
   })
+
+  it("ignores a stored value that throws when it is read", async () => {
+    const hostile = {}
+    Object.defineProperty(hostile, "autoFreeEnabled", {
+      get() {
+        throw new Error("the settings exploded")
+      },
+    })
+
+    const fake = await bootWorker({ tabs: [], settings: hostile })
+
+    const result = await fake.send({ type: "settings:get" })
+
+    expect(result.type).toBe("settings")
+    expect(result.settings.autoFreeEnabled).toBe(false)
+  })
 })
 
 describe("settings:set", () => {
@@ -538,6 +565,184 @@ describe("settings:set", () => {
     })
 
     expect(result.settings.confirmBeforeClosing).toBe(true)
+  })
+})
+
+describe("the automatic sweep", () => {
+  const old = Date.now() - 10 * 24 * 60 * 60 * 1000
+
+  it("does nothing when the setting is off", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old })],
+      activeTabId: 99,
+    })
+
+    await fake.fireAlarm("tab-warden-sweep")
+
+    expect(fake.state.discarded).toEqual([])
+  })
+
+  it("unloads the tabs left alone when the setting is on", async () => {
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old }),
+        tab(2, "https://b.com", { lastAccessed: old }),
+      ],
+      activeTabId: 99,
+      settings: { autoFreeEnabled: true },
+    })
+
+    await fake.fireAlarm("tab-warden-sweep")
+
+    expect(fake.state.discarded).toEqual([1, 2])
+  })
+
+  it("keeps the active tab of every window", async () => {
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old }),
+        tab(2, "https://b.com", { lastAccessed: old }),
+        tab(3, "https://c.com", { lastAccessed: old }),
+      ],
+      activeTabIds: [1, 3],
+      settings: { autoFreeEnabled: true },
+    })
+
+    await fake.fireAlarm("tab-warden-sweep")
+
+    expect(fake.state.discarded).toEqual([2])
+  })
+
+  it("keeps a tab that was used recently", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: Date.now() })],
+      activeTabId: 99,
+      settings: { autoFreeEnabled: true },
+    })
+
+    await fake.fireAlarm("tab-warden-sweep")
+
+    expect(fake.state.discarded).toEqual([])
+  })
+
+  it("keeps pinned and playing tabs", async () => {
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old, pinned: true }),
+        tab(2, "https://b.com", { lastAccessed: old, audible: true }),
+      ],
+      activeTabId: 99,
+      settings: { autoFreeEnabled: true },
+    })
+
+    await fake.fireAlarm("tab-warden-sweep")
+
+    expect(fake.state.discarded).toEqual([])
+  })
+
+  it("records the run so the popup can show it", async () => {
+    const fake = await bootWorker({
+      tabs: [
+        tab(1, "https://a.com", { lastAccessed: old }),
+        tab(2, "https://b.com", { lastAccessed: Date.now() }),
+      ],
+      activeTabId: 99,
+      settings: { autoFreeEnabled: true },
+    })
+
+    await fake.fireAlarm("tab-warden-sweep")
+
+    expect(fake.state.lastSweep.discarded).toBe(1)
+    expect(fake.state.lastSweep.skipped).toBe(1)
+    expect(Number.isFinite(fake.state.lastSweep.at)).toBe(true)
+  })
+
+  it("counts a refusal as kept", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old })],
+      activeTabId: 99,
+      settings: { autoFreeEnabled: true },
+    })
+    fake.state.discardRefusals.add(1)
+
+    await fake.fireAlarm("tab-warden-sweep")
+
+    expect(fake.state.lastSweep.discarded).toBe(0)
+    expect(fake.state.lastSweep.skipped).toBe(1)
+  })
+
+  it("ignores an alarm with another name", async () => {
+    const fake = await bootWorker({
+      tabs: [tab(1, "https://a.com", { lastAccessed: old })],
+      activeTabId: 99,
+      settings: { autoFreeEnabled: true },
+    })
+
+    await fake.fireAlarm("some-other-alarm")
+
+    expect(fake.state.discarded).toEqual([])
+  })
+
+  it("sets the alarm when the setting is turned on", async () => {
+    const fake = await bootWorker({ tabs: [] })
+
+    await fake.send({ type: "settings:set", patch: { autoFreeEnabled: true } })
+
+    expect(fake.state.alarms.has("tab-warden-sweep")).toBe(true)
+  })
+
+  it("clears the alarm when the setting is turned off", async () => {
+    const fake = await bootWorker({ tabs: [], settings: { autoFreeEnabled: true } })
+    await fake.fireInstalled()
+
+    await fake.send({ type: "settings:set", patch: { autoFreeEnabled: false } })
+
+    expect(fake.state.alarms.has("tab-warden-sweep")).toBe(false)
+  })
+
+  it("puts the alarm back after an install", async () => {
+    const fake = await bootWorker({ tabs: [], settings: { autoFreeEnabled: true } })
+
+    await fake.fireInstalled()
+
+    expect(fake.state.alarms.has("tab-warden-sweep")).toBe(true)
+  })
+
+  it("puts the alarm back when the browser starts", async () => {
+    const fake = await bootWorker({ tabs: [], settings: { autoFreeEnabled: true } })
+
+    await fake.fireStartup()
+
+    expect(fake.state.alarms.has("tab-warden-sweep")).toBe(true)
+  })
+
+  it("does not set the alarm when the setting is off", async () => {
+    const fake = await bootWorker({ tabs: [] })
+
+    await fake.fireInstalled()
+
+    expect(fake.state.alarms.has("tab-warden-sweep")).toBe(false)
+  })
+
+  it("carries the setting and the last run in the audit", async () => {
+    const fake = await bootWorker({
+      tabs: [],
+      settings: { autoFreeEnabled: true },
+      lastSweep: { at: 5, discarded: 2, skipped: 1 },
+    })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.autoFreeEnabled).toBe(true)
+    expect(result.lastSweep).toEqual({ at: 5, discarded: 2, skipped: 1 })
+  })
+
+  it("reports no last run when there has not been one", async () => {
+    const fake = await bootWorker({ tabs: [] })
+
+    const result = await fake.send({ type: "audit:get" })
+
+    expect(result.lastSweep).toBe(null)
   })
 })
 

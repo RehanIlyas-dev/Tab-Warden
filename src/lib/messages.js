@@ -3,6 +3,7 @@ import { STALE_AFTER_DAYS } from "./weight.js"
 // Contract between the service worker and the extension pages.
 export const STORAGE_KEYS = {
   settings: "tabWarden.settings",
+  lastSweep: "tabWarden.lastSweep",
 }
 
 // One place for every setting: the default and what a stored value may be.
@@ -24,6 +25,12 @@ const SETTINGS = {
     default: true,
     ok: (value) => typeof value === "boolean",
   },
+  autoFreeEnabled: {
+    // Off by default. It acts on tabs without the user asking, so it stays
+    // off until they turn it on.
+    default: false,
+    ok: (value) => typeof value === "boolean",
+  },
 }
 
 export const DEFAULT_SETTINGS = Object.fromEntries(
@@ -37,7 +44,11 @@ export function pickSettings(source) {
   if (!source || typeof source !== "object" || Array.isArray(source)) return picked
 
   for (const [key, spec] of Object.entries(SETTINGS)) {
-    if (spec.ok(source[key])) picked[key] = source[key]
+    try {
+      if (spec.ok(source[key])) picked[key] = source[key]
+    } catch {
+      // A value that throws when it is read is treated as missing.
+    }
   }
 
   return picked

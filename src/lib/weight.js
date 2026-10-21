@@ -72,11 +72,20 @@ export function idlePhrase(days) {
   return `last used ${Math.floor(days)} days ago`
 }
 
+// True when the tab is the one the user is looking at. The popup knows a
+// single tab, but a background run has no window in front of it, so it gets
+// the active tab of every window as a list.
+function isActiveTab(tab, options) {
+  if (typeof options.activeTabId === "number" && tab.id === options.activeTabId) return true
+  if (Array.isArray(options.activeTabIds) && options.activeTabIds.includes(tab.id)) return true
+  return false
+}
+
 // Guards: never the active tab, skips pinned and audio unless told otherwise.
 export function isReclaimable(tab, now, options = {}) {
   if (!tab) return false
   if (tab.discarded) return false
-  if (typeof options.activeTabId === "number" && tab.id === options.activeTabId) return false
+  if (isActiveTab(tab, options)) return false
   if (options.skipPinned !== false && tab.pinned) return false
   if (options.skipAudible !== false && tab.audible) return false
   return isStale(tab, now, options.staleAfterDays)

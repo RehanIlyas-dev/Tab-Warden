@@ -13,6 +13,7 @@ function showStoredSettings(settings) {
   $("#confirm-before-closing").checked = settings.confirmBeforeClosing
   $("#skip-audible").checked = settings.skipAudibleWhenDiscarding
   $("#stale-days").value = String(settings.staleAfterDays)
+  $("#auto-free").checked = settings.autoFreeEnabled
 }
 
 // Save a patch to the stored settings
@@ -73,6 +74,10 @@ async function main() {
 
   $("#stale-days").addEventListener("change", (event) => {
     void saveDays(event.target.value)
+  })
+
+  $("#auto-free").addEventListener("change", (event) => {
+    void savePatch({ autoFreeEnabled: event.target.checked })
   })
 
   try {

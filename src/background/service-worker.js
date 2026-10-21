@@ -1,10 +1,22 @@
 import { groupDuplicates, normalizeUrl, originOf } from "../lib/tab.js"
 import { STORAGE_KEYS, normalizeSettings, pickSettings } from "../lib/messages.js"
 import { idleDays, isStale, reclaimableIds, weightScore } from "../lib/weight.js"
+import { sweepPlan, sweepSummary } from "../lib/sweep.js"
+
+// The name of the alarm that wakes the worker for an automatic run.
+const SWEEP_ALARM = "tab-warden-sweep"
+
+// Once a day. Chrome keeps alarms alive for at least a minute, and a day is
+// the shortest period that makes sense for tabs left open for days.
+const SWEEP_PERIOD_MINUTES = 24 * 60
+
+// The first run happens about an hour after the user turns the setting on, so
+// they do not wait a whole day to see that it works.
+const SWEEP_FIRST_RUN_MINUTES = 60
 
 // Converts a chrome.tabs.Tab object to a record suitable for storage and comparison. Returns null if the tab is invalid (e.g. missing an ID or URL).
 function toRecord(tab) {
-  if (tab.id === undefined || !tab.url) return null
+  if (!tab || tab.id === undefined || !tab.url) return null
 
   return {
     id: tab.id,
@@ -46,6 +58,108 @@ async function queryActiveTab() {
   return activeTab
 }
 
+// The record of the last automatic run, or null when there has not been one.
+async function readLastSweep() {
+  try {
+    const stored = await chrome.storage.local.get(STORAGE_KEYS.lastSweep)
+    const record = stored[STORAGE_KEYS.lastSweep]
+    return record && typeof record === "object" ? record : null
+  } catch {
+    return null
+  }
+}
+
+// Creates or removes the alarm so it matches the setting. Alarms do not
+// survive an extension reload, so this also runs on install and on start.
+async function ensureSweepAlarm(enabled) {
+  try {
+    if (!enabled) {
+      await chrome.alarms.clear(SWEEP_ALARM)
+      return
+    }
+
+    const existing = await chrome.alarms.get(SWEEP_ALARM)
+    if (existing) return
+
+    chrome.alarms.create(SWEEP_ALARM, {
+      delayInMinutes: SWEEP_FIRST_RUN_MINUTES,
+      periodInMinutes: SWEEP_PERIOD_MINUTES,
+    })
+  } catch (error) {
+    // A missing alarms API must never stop the worker from starting.
+    console.error("[tab-warden] could not set the clean up alarm", error)
+  }
+}
+
+// Puts the alarm in line with the stored setting.
+async function syncSweepAlarm() {
+  try {
+    const settings = await readSettings()
+    await ensureSweepAlarm(settings.autoFreeEnabled)
+  } catch (error) {
+    console.error("[tab-warden] could not sync the clean up alarm", error)
+  }
+}
+
+// Frees the tabs that have been left alone for long enough, and records what
+// happened. Chrome can still refuse a tab, so the result says what really
+// happened and not what was asked for.
+async function runSweep() {
+  const settings = await readSettings()
+
+  if (!settings.autoFreeEnabled) {
+    return { type: "sweep:done", discarded: [], skipped: [], ran: false }
+  }
+
+  const now = Date.now()
+  const records = await queryRecords()
+
+  // The active tab of every window, because a background run has no window
+  // in front of it and must not unload what the user is looking at.
+  const activeTabs = await chrome.tabs.query({ active: true })
+  const activeTabIds = activeTabs
+    .map((tab) => tab?.id)
+    .filter((id) => Number.isInteger(id))
+
+  const plan = sweepPlan(records, now, {
+    activeTabIds,
+    skipPinned: settings.ignorePinnedWhenClosing,
+    skipAudible: settings.skipAudibleWhenDiscarding,
+    staleAfterDays: settings.staleAfterDays,
+  })
+
+  const discarded = []
+  const skipped = [...plan.keep]
+
+  for (const id of plan.unload) {
+    try {
+      // Chrome resolves with the tab, or with nothing when it refused.
+      const result = await chrome.tabs.discard(id)
+      if (result) {
+        discarded.push(id)
+      } else {
+        skipped.push(id)
+      }
+    } catch {
+      skipped.push(id)
+    }
+  }
+
+  try {
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.lastSweep]: {
+        at: now,
+        discarded: discarded.length,
+        skipped: skipped.length,
+      },
+    })
+  } catch {
+    // Losing the record of the run is not worth failing the run.
+  }
+
+  return { type: "sweep:done", discarded, skipped, ran: true }
+}
+
 // Handles a message from the extension pages and returns a response. The response is sent asynchronously via sendResponse, so this function returns a promise.
 async function handle(request) {
   switch (request?.type) {
@@ -75,12 +189,16 @@ async function handle(request) {
         staleAfterDays: settings.staleAfterDays,
       })
 
+      const lastSweep = await readLastSweep()
+
       return {
         type: "audit",
         tabs,
         groups,
         reclaimable,
         staleAfterDays: settings.staleAfterDays,
+        autoFreeEnabled: settings.autoFreeEnabled,
+        lastSweep: lastSweep ? sweepSummary(lastSweep, now) : null,
       }
     }
 
@@ -203,6 +321,8 @@ async function handle(request) {
       const current = await readSettings()
       const next = normalizeSettings({ ...current, ...pickSettings(request.patch) })
       await chrome.storage.local.set({ [STORAGE_KEYS.settings]: next })
+      // Turning the setting on or off has to move the alarm with it.
+      await ensureSweepAlarm(next.autoFreeEnabled)
       return { type: "settings", settings: next }
     }
 
@@ -228,4 +348,26 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })
 
   return true
+})
+
+// The alarm that runs the clean up. Any other alarm is left alone.
+// The promise is returned so the tests can wait for the run to finish. Chrome
+// ignores what a listener returns.
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm?.name !== SWEEP_ALARM) return undefined
+
+  return runSweep().catch((error) => {
+    console.error("[tab-warden] clean up failed", error)
+  })
+})
+
+// A new install, and the browser starting again, both need the alarm back.
+// Chrome drops alarms when the extension is reloaded or updated.
+// The promise is returned so the tests can wait. Chrome ignores it.
+chrome.runtime.onInstalled.addListener(() => {
+  return syncSweepAlarm()
+})
+
+chrome.runtime.onStartup.addListener(() => {
+  return syncSweepAlarm()
 })

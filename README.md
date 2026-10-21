@@ -17,7 +17,7 @@
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/runtime_dependencies-none-2EA44F?style=flat-square" alt="Zero runtime dependencies" height="20"></a>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/telemetry-none-2EA44F?style=flat-square" alt="No telemetry" height="20"></a>
 <a href="https://github.com/RehanIlyas-dev/Tab-Warden/releases"><img src="https://img.shields.io/badge/release-v0.2.0-2EA44F?style=flat-square" alt="Release v0.2.0" height="20"></a>
-<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-162_passing-2EA44F?style=flat-square" alt="162 tests passing" height="20"></a>
+<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-196_passing-2EA44F?style=flat-square" alt="196 tests passing" height="20"></a>
 </p>
 
 </div>
@@ -43,10 +43,11 @@ Tab Warden answers one question: what is costing me right now, and what can I cl
 | **All tabs by site**  | Every open tab, grouped by domain, click to focus            |
 | **Tab weight**        | Rates each tab by how long it has been idle and what it does  |
 | **Free up memory**    | Unloads idle background tabs, they reload when you go back   |
+| **Daily clean up**    | Does the same on its own once a day, if you turn it on       |
 | **Guarded closing**   | Never closes the active tab or your pinned tabs              |
 
-Everything here is covered by 162 unit tests, and the extension asks for only two
-permissions: `tabs` and `storage`.
+Everything here is covered by 196 unit tests, and the extension asks for only three
+permissions: `tabs`, `storage` and `alarms`.
 
 ## Using it
 
@@ -71,7 +72,9 @@ the memory and the tab reloads when you click it, so anything you had not saved
 on that page is lost.
 
 Options holds the switches: keep pinned tabs, ask before closing, how many days
-count as stale, and leave tabs that are playing audio alone.
+count as stale, leave tabs that are playing audio alone, and turn the daily clean
+up on or off. The daily run uses the same rules as the button, and it never
+touches a tab you are looking at in any window.
 
 ## Install
 
@@ -81,6 +84,18 @@ Grab
 [`tab-warden-0.2.0.zip`](https://github.com/RehanIlyas-dev/Tab-Warden/releases/download/v0.2.0/tab-warden-0.2.0.zip),
 unzip it, then open `chrome://extensions`, turn on **Developer mode**, click
 **Load unpacked**, and pick the unzipped folder. No build step needed.
+
+### Extracting the archive on Linux
+
+If you downloaded the `.tar.gz` archive instead of the zip:
+
+```sh
+tar -xzf tab-warden-0.2.0.tar.gz
+```
+
+`-x` extracts, `-z` decompresses gzip, and `-f` names the file. You get a
+`tab-warden-0.2.0` folder, which is the one you pick in `chrome://extensions`
+with Developer mode on.
 
 ### From source
 
@@ -93,17 +108,6 @@ npm run build
 
 Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**,
 and select the `dist/` folder.
-
-### Extracting the archive on Linux
-
-If you downloaded a `.tar.gz` archive instead of a zip:
-
-```sh
-tar -xzf tab-warden-0.2.0.tar.gz
-```
-
-`-x` extracts, `-z` decompresses gzip, and `-f` names the file. The unpacked folder
-goes straight into `chrome://extensions` with Developer mode on.
 
 ### Web Store
 
@@ -128,6 +132,7 @@ Tab-Warden/
 │   ├── lib/tab.js
 │   ├── lib/focus.js
 │   ├── lib/messages.js
+│   ├── lib/sweep.js
 │   ├── lib/weight.js
 │   ├── popup/main.js
 │   ├── popup/style.css
@@ -136,7 +141,11 @@ Tab-Warden/
     ├── tab.test.js
     ├── service-worker.test.js
     ├── focus.test.js
+    ├── sweep.test.js
     ├── weight.test.js
+    ├── bundle-test.mjs
+    ├── crash-probe.mjs
+    ├── dom-stub.js
     └── fake-chrome.js
 ```
 
@@ -153,5 +162,8 @@ Issues and pull requests welcome.
 npm run build
 npm test
 ```
+
+`npm run check` runs all three layers: the unit tests, the crash pass that
+throws hostile input at the code, and the check of the built extension.
 
 Keep logic that can be tested in `src/lib/`. Avoid adding runtime dependencies.

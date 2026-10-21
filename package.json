@@ -2,7 +2,7 @@
   "name": "tab-warden",
   "version": "0.2.0",
   "private": true,
-  "description": "Finds duplicate tabs by URL, lists every open tab grouped by site, closes the copies, and unloads the tabs you left idle.",
+  "description": "Finds duplicate tabs by URL, groups every open tab by site, closes the copies, and unloads the idle ones, once a day.",
   "type": "module",
   "engines": {
     "chrome": ">=120"
@@ -12,7 +12,12 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "package": "vite build && cd dist && zip -r ../tab-warden-0.2.0.zip . -x '.*'",
+    "crash": "node test/crash-probe.mjs",
+    "bundle": "vite build && node test/bundle-test.mjs",
+    "check": "npm run test && npm run crash && npm run bundle",
+    "package": "vite build && npm run package:zip && npm run package:tar",
+    "package:zip": "cd dist && zip -r ../tab-warden-0.2.0.zip . -x '.*'",
+    "package:tar": "rm -rf .tar-tmp && mkdir -p .tar-tmp/tab-warden-0.2.0 && cp -r dist/. .tar-tmp/tab-warden-0.2.0/ && tar -czf tab-warden-0.2.0.tar.gz -C .tar-tmp tab-warden-0.2.0 && rm -rf .tar-tmp",
     "icons": "python3 scripts/make-icons.py",
     "store-assets": "python3 scripts/make-store-assets.py"
   },

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 *.zip
+*.tar.gz
 functions.md
 
 # build metadata

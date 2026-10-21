@@ -29,7 +29,37 @@ function readAuditResponse(response) {
     staleAfterDays: Number.isFinite(response.staleAfterDays)
       ? response.staleAfterDays
       : STALE_AFTER_DAYS,
+    autoFreeEnabled: response.autoFreeEnabled === true,
+    lastSweep:
+      response.lastSweep && Number.isFinite(response.lastSweep.at)
+        ? {
+            at: response.lastSweep.at,
+            discarded: Number.isFinite(response.lastSweep.discarded)
+              ? response.lastSweep.discarded
+              : 0,
+            skipped: Number.isFinite(response.lastSweep.skipped)
+              ? response.lastSweep.skipped
+              : 0,
+          }
+        : null,
   }
+}
+
+// How long ago something happened, in words.
+function agoPhrase(ms) {
+  const minutes = ms / 60000
+
+  if (!Number.isFinite(minutes) || minutes < 1) return "just now"
+  if (minutes < 60) return `${Math.round(minutes)} minutes ago`
+
+  const hours = minutes / 60
+  if (hours < 24) {
+    const count = Math.round(hours)
+    return count === 1 ? "an hour ago" : `${count} hours ago`
+  }
+
+  const days = Math.round(hours / 24)
+  return days === 1 ? "yesterday" : `${days} days ago`
 }
 
 function plural(count, word) {
@@ -321,6 +351,34 @@ function setSummary(text) {
   $("#summary").textContent = text
 }
 
+// The line under the heaviest tabs that says whether the daily run is on and
+// what it did last time. A run nobody can see is a run nobody trusts.
+function renderAutoFree(audit) {
+  const line = $("#auto-free")
+
+  if (!audit.autoFreeEnabled) {
+    line.textContent =
+      "Automatic clean up is off. Turn it on in options to free idle tabs every day."
+    return
+  }
+
+  const last = audit.lastSweep
+
+  if (!last) {
+    line.textContent = "Automatic clean up is on. It runs once a day and has not run yet."
+    return
+  }
+
+  const when = agoPhrase(Date.now() - last.at)
+
+  if (last.discarded === 0) {
+    line.textContent = `Automatic clean up found nothing to free ${when}. It runs once a day.`
+    return
+  }
+
+  line.textContent = `Automatic clean up freed ${plural(last.discarded, "tab")} ${when}. It runs once a day.`
+}
+
 // Switches to a tab and reports back. focusTab itself never throws, so a
 // failure lands in the footer instead of vanishing into a rejected promise,
 // which is what made this button look dead.
@@ -565,6 +623,7 @@ async function refresh() {
   renderDuplicates(audit.groups)
   renderHeaviest(audit.tabs, new Set(audit.reclaimable))
   renderAllTabs(audit.tabs, duplicateIds)
+  renderAutoFree(audit)
   updateControls()
 
   // The worker is missing the fields this popup needs, so it is an older one.

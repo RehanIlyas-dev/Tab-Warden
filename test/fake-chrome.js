@@ -9,6 +9,9 @@
 //   chrome.tabs.query, chrome.tabs.remove, chrome.tabs.discard
 //   chrome.storage.local.get, chrome.storage.local.set
 //   chrome.runtime.onMessage.addListener
+//   chrome.runtime.onInstalled.addListener, chrome.runtime.onStartup.addListener
+//   chrome.alarms.create, chrome.alarms.get, chrome.alarms.clear
+//   chrome.alarms.onAlarm.addListener
 //
 // Anything else the worker starts calling will throw "not a function", which
 // is the correct signal that this fake needs updating.
@@ -17,16 +20,23 @@ export function createFakeChrome(options = {}) {
   const state = {
     tabs: [...(options.tabs ?? [])],
     settings: options.settings ?? null,
+    lastSweep: options.lastSweep ?? null,
     removed: [],
     discarded: [],
     queries: [],
     activeTabId: options.activeTabId ?? null,
+    // Several active tabs at once, one per window. Null means use activeTabId.
+    activeTabIds: options.activeTabIds ?? null,
     failNextRemove: false,
     failNextDiscard: false,
     discardRefusals: new Set(),
+    alarms: new Map(),
   }
 
   let listener = null
+  let alarmListener = null
+  let installedListener = null
+  let startupListener = null
 
   const chrome = {
     tabs: {
@@ -36,7 +46,8 @@ export function createFakeChrome(options = {}) {
         let result = [...state.tabs]
 
         if (info.active === true) {
-          result = result.filter((tab) => tab.id === state.activeTabId)
+          const ids = state.activeTabIds ?? (state.activeTabId === null ? [] : [state.activeTabId])
+          result = result.filter((tab) => tab && ids.includes(tab.id))
         }
 
         return result
@@ -71,6 +82,7 @@ export function createFakeChrome(options = {}) {
         // Chrome resolves with the tab, or with nothing when it refuses.
         if (state.discardRefusals.has(id)) return undefined
         if (state.tabs[index].discarded) return undefined
+        if (state.activeTabIds?.includes(id)) return undefined
         if (state.activeTabId === id) return undefined
 
         state.tabs[index] = { ...state.tabs[index], discarded: true }
@@ -82,16 +94,48 @@ export function createFakeChrome(options = {}) {
     storage: {
       local: {
         async get(key) {
-          if (key === "tabWarden.settings") {
-            return state.settings === null ? {} : { [key]: state.settings }
+          const keys = Array.isArray(key) ? key : [key]
+          const found = {}
+
+          for (const name of keys) {
+            if (name === "tabWarden.settings") {
+              if (state.settings !== null) found[name] = state.settings
+            }
+            if (name === "tabWarden.lastSweep") {
+              if (state.lastSweep !== null) found[name] = state.lastSweep
+            }
           }
-          return {}
+
+          return found
         },
 
         async set(values) {
           if ("tabWarden.settings" in values) {
             state.settings = values["tabWarden.settings"]
           }
+          if ("tabWarden.lastSweep" in values) {
+            state.lastSweep = values["tabWarden.lastSweep"]
+          }
+        },
+      },
+    },
+
+    alarms: {
+      create(name, info = {}) {
+        state.alarms.set(name, { name, ...info })
+      },
+
+      async get(name) {
+        return state.alarms.get(name)
+      },
+
+      async clear(name) {
+        return state.alarms.delete(name)
+      },
+
+      onAlarm: {
+        addListener(fn) {
+          alarmListener = fn
         },
       },
     },
@@ -100,6 +144,18 @@ export function createFakeChrome(options = {}) {
       onMessage: {
         addListener(fn) {
           listener = fn
+        },
+      },
+
+      onInstalled: {
+        addListener(fn) {
+          installedListener = fn
+        },
+      },
+
+      onStartup: {
+        addListener(fn) {
+          startupListener = fn
         },
       },
     },
@@ -128,5 +184,32 @@ export function createFakeChrome(options = {}) {
     })
   }
 
-  return { chrome, state, send }
+  // Fires the alarm, the way Chrome does when the time comes. Resolves once
+  // the worker has finished with it.
+  async function fireAlarm(name) {
+    if (alarmListener === null) {
+      throw new Error("service worker never registered an onAlarm listener")
+    }
+
+    await alarmListener({ name })
+  }
+
+  // The extension being installed, or the browser starting again.
+  async function fireInstalled() {
+    if (installedListener === null) {
+      throw new Error("service worker never registered an onInstalled listener")
+    }
+
+    await installedListener()
+  }
+
+  async function fireStartup() {
+    if (startupListener === null) {
+      throw new Error("service worker never registered an onStartup listener")
+    }
+
+    await startupListener()
+  }
+
+  return { chrome, state, send, fireAlarm, fireInstalled, fireStartup }
 }
