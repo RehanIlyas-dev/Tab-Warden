@@ -458,6 +458,19 @@ for (const [label, reply] of hostileReplies) {
   })
 }
 
+await probe("the popup says to reload when the worker does not know the daily run", async () => {
+  const byId = await bootPopup({
+    type: "audit",
+    tabs: [],
+    groups: [],
+    reclaimable: [],
+    staleAfterDays: 3,
+  })
+
+  const line = byId.get("auto-free").textContent
+  if (!line.includes("Reload")) throw new Error(`the popup says: ${line}`)
+})
+
 await probe("the popup survives a reply that arrives slowly", async () => {
   await bootPopup(async () => {
     await new Promise((resolve) => setTimeout(resolve, 5))
@@ -703,6 +716,18 @@ await probe("the options page puts back a number of days that makes no sense", a
   byId.get("stale-days").value = "abc"
   byId.get("stale-days").listeners?.get?.("change")
   await settle()
+})
+
+await probe("the options page survives a worker that does not know the daily run", async () => {
+  await bootOptions({
+    type: "settings",
+    settings: {
+      ignorePinnedWhenClosing: true,
+      confirmBeforeClosing: true,
+      staleAfterDays: 3,
+      skipAudibleWhenDiscarding: true,
+    },
+  })
 })
 
 await probe("the options page turns the daily run on and off", async () => {

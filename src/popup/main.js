@@ -30,6 +30,9 @@ function readAuditResponse(response) {
       ? response.staleAfterDays
       : STALE_AFTER_DAYS,
     autoFreeEnabled: response.autoFreeEnabled === true,
+    // A worker that does not send the switch is an older one, so the popup
+    // must not claim the daily run is off when it simply does not know.
+    autoFreeKnown: typeof response.autoFreeEnabled === "boolean",
     lastSweep:
       response.lastSweep && Number.isFinite(response.lastSweep.at)
         ? {
@@ -355,6 +358,11 @@ function setSummary(text) {
 // what it did last time. A run nobody can see is a run nobody trusts.
 function renderAutoFree(audit) {
   const line = $("#auto-free")
+
+  if (!audit.autoFreeKnown) {
+    line.textContent = "Reload the extension to see the daily clean up."
+    return
+  }
 
   if (!audit.autoFreeEnabled) {
     line.textContent =

@@ -17,7 +17,12 @@
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/runtime_dependencies-none-2EA44F?style=flat-square" alt="Zero runtime dependencies" height="20"></a>
 <a href="https://developer.chrome.com/docs/extensions/mv3/intro"><img src="https://img.shields.io/badge/telemetry-none-2EA44F?style=flat-square" alt="No telemetry" height="20"></a>
 <a href="https://github.com/RehanIlyas-dev/Tab-Warden/releases"><img src="https://img.shields.io/badge/release-v0.2.0-2EA44F?style=flat-square" alt="Release v0.2.0" height="20"></a>
-<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-196_passing-2EA44F?style=flat-square" alt="196 tests passing" height="20"></a>
+<a href="https://vitest.dev/"><img src="https://img.shields.io/badge/tests-205_passing-2EA44F?style=flat-square" alt="205 tests passing" height="20"></a>
+</p>
+
+<p>
+<a href="https://rehanilyas-dev.github.io/Tab-Warden/"><img src="https://img.shields.io/badge/website-live-2EA44F?style=flat-square" alt="Project site" height="20"></a>
+<a href="https://rehanilyas-dev.github.io/Tab-Warden/#privacy"><img src="https://img.shields.io/badge/privacy_policy-read_it-2EA44F?style=flat-square" alt="Privacy policy" height="20"></a>
 </p>
 
 </div>
@@ -46,7 +51,7 @@ Tab Warden answers one question: what is costing me right now, and what can I cl
 | **Daily clean up**    | Does the same on its own once a day, if you turn it on       |
 | **Guarded closing**   | Never closes the active tab or your pinned tabs              |
 
-Everything here is covered by 196 unit tests, and the extension asks for only three
+Everything here is covered by 205 unit tests, and the extension asks for only three
 permissions: `tabs`, `storage` and `alarms`.
 
 ## Using it
@@ -153,6 +158,14 @@ Tab-Warden/
 
 Plain JavaScript (ES2022), Manifest V3, Vite, no UI framework, zero runtime
 dependencies.
+
+## Privacy
+
+Everything runs on your device. There is no server, no analytics, and no
+telemetry, and the extension makes no network requests. The full policy is on
+the project site:
+
+https://rehanilyas-dev.github.io/Tab-Warden/#privacy
 
 ## Contributing
 
