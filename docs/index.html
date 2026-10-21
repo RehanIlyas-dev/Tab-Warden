@@ -3,159 +3,602 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tab Warden Privacy Policy</title>
+    <title>Tab Warden: find duplicate tabs and unload the idle ones</title>
+    <meta name="description" content="Tab Warden is a Chrome extension that finds duplicate tabs, groups every open tab by site, closes the copies, and unloads the tabs you have not touched in days.">
+    <link rel="icon" href="icon-48.png">
+    <meta property="og:title" content="Tab Warden">
+    <meta property="og:description" content="Find the copies. Unload the idle ones.">
+    <meta property="og:image" content="https://rehanilyas-dev.github.io/Tab-Warden/screenshot@2x.png">
     <style>
       :root {
-        --bg: #ffffff;
-        --text: #1c2230;
-        --muted: #5a6273;
-        --border: #e3e6ec;
-        --accent: #2f6fdd;
+        --bg: #0f131a;
+        --bg-soft: #141924;
+        --card: #171c26;
+        --card-soft: #1b2130;
+        --text: #e8eaf0;
+        --muted: #99a2b2;
+        --line: #262d3b;
+        --accent: #4f8cff;
+        --accent-soft: rgba(79, 140, 255, 0.14);
+        --warm: #e0a34a;
+        --radius: 16px;
       }
       * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
-      }
-      main {
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 56px 24px 80px;
-      }
-      h1 { font-size: 30px; line-height: 1.25; margin: 0 0 8px; }
-      h2 {
-        font-size: 19px;
-        margin: 40px 0 10px;
-        padding-top: 20px;
-        border-top: 1px solid var(--border);
-      }
-      p, li { margin: 0 0 10px; }
-      ul { padding-left: 22px; }
-      .meta { color: var(--muted); margin-bottom: 28px; }
-      code {
-        font-family: ui-monospace, "SF Mono", Menlo, monospace;
-        font-size: 14px;
-        background: #f4f5f8;
-        padding: 1px 5px;
-        border-radius: 4px;
+        font: 16px/1.7 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
       a { color: var(--accent); }
+      h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; }
+      h1 { font-size: clamp(2.1rem, 5.2vw, 3.4rem); margin: 0 0 18px; }
+      h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); margin: 0 0 12px; }
+      h3 { font-size: 1.08rem; margin: 0 0 8px; }
+      p { margin: 0 0 14px; }
+      ul { margin: 0 0 14px; padding-left: 20px; }
+      li { margin: 0 0 8px; }
+      code {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.9em;
+        background: #0b0e14;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+      .muted { color: var(--muted); }
+      .center { text-align: center; }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(15, 19, 26, 0.88);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--line);
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        height: 62px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        color: var(--text);
+        text-decoration: none;
+        margin-right: auto;
+      }
+      .brand img { width: 28px; height: 28px; border-radius: 7px; }
+      nav { display: flex; gap: 22px; }
+      nav a { color: var(--muted); text-decoration: none; font-size: 0.94rem; }
+      nav a:hover { color: var(--text); }
+      .btn {
+        display: inline-block;
+        padding: 10px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: 1px solid transparent;
+      }
+      .btn-primary { background: var(--accent); color: #06101f; }
+      .btn-primary:hover { background: #6b9dff; }
+      .btn-ghost { border-color: var(--line); color: var(--text); }
+      .btn-ghost:hover { border-color: #3a4356; }
+
+      .hero { padding: 72px 0 56px; }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 52px;
+        align-items: center;
+      }
+      .eyebrow {
+        display: inline-block;
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border: 1px solid rgba(79, 140, 255, 0.28);
+        border-radius: 999px;
+        padding: 5px 13px;
+        margin-bottom: 20px;
+      }
+      .lead { font-size: 1.12rem; color: #c3cad8; max-width: 34em; }
+      .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 14px; }
+      .fine { font-size: 0.88rem; color: var(--muted); }
+      .shot {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--card);
+        padding: 10px;
+        box-shadow: 0 26px 70px rgba(0, 0, 0, 0.5);
+      }
+      .shot img { display: block; width: 100%; border-radius: 10px; }
+      .shot-bar {
+        display: flex;
+        gap: 6px;
+        padding: 4px 4px 10px;
+      }
+      .shot-bar i { width: 10px; height: 10px; border-radius: 50%; background: #2c3444; }
+
+      .strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin: 0 0 72px;
+      }
+      .strip div { background: var(--card); padding: 22px 20px; }
+      .strip b { display: block; font-size: 1.5rem; letter-spacing: -0.02em; }
+      .strip span { color: var(--muted); font-size: 0.9rem; }
+
+      section { padding: 0 0 72px; }
+      .section-head { max-width: 44em; margin-bottom: 30px; }
+      .section-head p { color: var(--muted); margin: 0; }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 22px;
+      }
+      .card p { color: var(--muted); margin: 0; font-size: 0.95rem; }
+      .card .tag {
+        display: inline-block;
+        font-size: 0.74rem;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--warm);
+        margin-bottom: 10px;
+      }
+
+      .steps { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+      .step {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--bg-soft);
+        padding: 22px;
+      }
+      .step b { display: block; color: var(--accent); font-size: 0.85rem; margin-bottom: 8px; }
+      .step p { color: var(--muted); margin: 0; font-size: 0.95rem; }
+
+      .wide-shot {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: var(--card);
+      }
+      .wide-shot img { display: block; width: 100%; }
+
+      .quiet {
+        background: var(--bg-soft);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 30px;
+      }
+      .quiet ul { margin: 0; }
+      .quiet li { color: #c3cad8; }
+
+      .faq details {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        padding: 0 18px;
+        margin-bottom: 10px;
+      }
+      .faq summary {
+        cursor: pointer;
+        padding: 15px 0;
+        font-weight: 600;
+        list-style: none;
+      }
+      .faq summary::-webkit-details-marker { display: none; }
+      .faq summary::after { content: " +"; color: var(--accent); }
+      .faq details[open] summary::after { content: " -"; }
+      .faq p { color: var(--muted); margin: 0 0 16px; }
+
+      .policy {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 34px;
+      }
+      .policy h2 {
+        font-size: 1.5rem;
+        padding-top: 26px;
+        margin-top: 26px;
+        border-top: 1px solid var(--line);
+      }
+      .policy h2:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+      .policy p, .policy li { color: #c3cad8; font-size: 0.97rem; }
+      .policy .meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 22px; }
+      .policy a { color: var(--accent); }
+
       footer {
-        margin-top: 48px;
-        padding-top: 18px;
-        border-top: 1px solid var(--border);
+        border-top: 1px solid var(--line);
+        padding: 30px 0 44px;
         color: var(--muted);
-        font-size: 14px;
+        font-size: 0.92rem;
+      }
+      .foot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: center;
+      }
+      .foot nav { margin-left: auto; }
+
+      @media (max-width: 860px) {
+        .hero { padding: 44px 0 40px; }
+        .hero-grid { grid-template-columns: 1fr; gap: 34px; }
+        nav { display: none; }
+        .policy { padding: 24px; }
       }
     </style>
   </head>
   <body>
-    <main>
-      <h1>Tab Warden Privacy Policy</h1>
-      <p class="meta">Last updated: 21 October 2026</p>
+    <header>
+      <div class="wrap bar">
+        <a class="brand" href="#top">
+          <img src="icon-128.png" alt="">
+          Tab Warden
+        </a>
+        <nav>
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <a class="btn btn-primary" href="https://github.com/RehanIlyas-dev/Tab-Warden/releases/latest">Download</a>
+      </div>
+    </header>
 
-      <p>
-        Tab Warden is a Chrome extension that finds duplicate tabs, lists every open tab
-        grouped by site, closes the copies you choose to remove, and unloads the tabs you
-        have not used. It can also do that unloading on its own once a day, if you turn
-        that on. This page explains what it reads, what it stores, and what it does not
-        do.
-      </p>
+    <main id="top">
+      <div class="wrap">
+        <section class="hero">
+          <div class="hero-grid">
+            <div>
+              <span class="eyebrow">A Chrome extension for people with too many tabs</span>
+              <h1>Find the copies. Unload the idle ones.</h1>
+              <p class="lead">
+                You open the same page from a newsletter, a search result, and a link in a
+                chat, and end up with nine tabs pointing at one page. Tab Warden finds
+                those copies, closes them, and frees the memory held by the tabs you have
+                not touched in days.
+              </p>
+              <div class="cta">
+                <a class="btn btn-primary" href="https://github.com/RehanIlyas-dev/Tab-Warden/releases/latest">Download for Chrome</a>
+                <a class="btn btn-ghost" href="#how">See how it works</a>
+              </div>
+              <p class="fine">
+                Chrome 120 or newer. Free, no account, no sign in, nothing tracked.
+              </p>
+            </div>
+            <div class="shot">
+              <div class="shot-bar"><i></i><i></i><i></i></div>
+              <img src="screenshot@2x.png" alt="The Tab Warden popup showing the stat cards, the duplicate groups, and the heaviest tabs with a weight for each one">
+            </div>
+          </div>
+        </section>
 
-      <h2>What the extension reads</h2>
-      <ul>
-        <li>The URL and title of your open tabs, so it can spot duplicates and group tabs by site.</li>
-        <li>Whether a tab is pinned, playing audio, or already unloaded, so it can pick which copy to keep.</li>
-        <li>Which window a tab belongs to, so it can bring that window forward when you click a row.</li>
-        <li>Which tab you are currently looking at, so it never closes it.</li>
-        <li>When a tab was last used, so it can tell you which ones have been sitting idle.</li>
-      </ul>
-      <p>
-        This information is requested from Chrome each time the popup opens. It is held in
-        memory while the popup is open and is never written to disk. If you turn on the
-        daily clean up, the same tab details are read once a day, in the background, and
-        are used only to decide which tabs to unload. They are not written to disk.
-      </p>
+        <div class="strip">
+          <div>
+            <b>3 permissions</b>
+            <span>every one of them needed for a feature that shipped</span>
+          </div>
+          <div>
+            <b>0 network calls</b>
+            <span>no server, no analytics, nothing leaves your machine</span>
+          </div>
+          <div>
+            <b>196 tests</b>
+            <span>plus a crash pass that throws hostile input at it</span>
+          </div>
+          <div>
+            <b>0 dependencies</b>
+            <span>plain JavaScript, bundled by Vite</span>
+          </div>
+        </div>
 
-      <h2>What the extension stores</h2>
-      <p>
-        Five preferences are saved on your device with <code>chrome.storage.local</code>:
-      </p>
-      <ul>
-        <li><code>ignorePinnedWhenClosing</code>, whether pinned tabs are skipped when closing or unloading.</li>
-        <li><code>confirmBeforeClosing</code>, whether a confirmation row appears before closing.</li>
-        <li><code>staleAfterDays</code>, how many days a tab has to be unused before it counts as idle.</li>
-        <li><code>skipAudibleWhenDiscarding</code>, whether tabs playing audio are left alone.</li>
-        <li><code>autoFreeEnabled</code>, whether the daily clean up runs on its own.</li>
-      </ul>
-      <p>
-        The daily clean up also keeps a record of its last run: the time it ran, how many
-        tabs it unloaded, and how many it kept. That record holds three numbers, no tab
-        titles, no URLs and no browsing history.
-      </p>
-      <p>
-        Nothing else is stored. No tab titles, URLs, or browsing history are saved.
-      </p>
+        <section id="features">
+          <div class="section-head">
+            <h2>What it does</h2>
+            <p>
+              One question, answered: what is costing me right now, and what can I close.
+            </p>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <span class="tag">Duplicate finder</span>
+              <h3>It sees the copies, not just the same address</h3>
+              <p>
+                Tabs are compared by their real page, with tracking parameters stripped
+                and YouTube links matched by video id. Nine tabs opened from a newsletter
+                collapse into one row.
+              </p>
+            </div>
+            <div class="card">
+              <span class="tag">All tabs by site</span>
+              <h3>Every tab, grouped by where it came from</h3>
+              <p>
+                The full list of your open tabs, grouped by domain and ordered by when
+                you last used them. Click any row to jump to that tab and bring its
+                window forward.
+              </p>
+            </div>
+            <div class="card">
+              <span class="tag">Tab weight</span>
+              <h3>It tells you which tabs are heavy</h3>
+              <p>
+                Every tab gets a score from how long it has been idle, whether it is
+                playing audio, and whether it is a duplicate. The heaviest ones sit at
+                the top, with a plain reading of how long you have left them alone.
+              </p>
+            </div>
+            <div class="card">
+              <span class="tag">Free up memory</span>
+              <h3>It lets go of the memory a tab was holding</h3>
+              <p>
+                Unloading empties the memory a background tab was holding and leaves the
+                tab in place, so it reloads when you click it. Nothing is lost except an
+                unsaved form, and the extension says so before it acts.
+              </p>
+            </div>
+            <div class="card">
+              <span class="tag">Daily clean up</span>
+              <h3>It does the same on its own, once a day</h3>
+              <p>
+                Turn on one switch and the extension wakes up once a day and frees the
+                idle tabs while the browser is open. It is off by default, and the popup
+                tells you when it last ran and what it freed.
+              </p>
+            </div>
+            <div class="card">
+              <span class="tag">Guarded closing</span>
+              <h3>It will not touch what you care about</h3>
+              <p>
+                The tab you are looking at is never closed or unloaded, in any window.
+                Pinned tabs and tabs playing audio are left alone by default, and every
+                action asks first.
+              </p>
+            </div>
+          </div>
+        </section>
 
-      <h2>What the extension does not do</h2>
-      <ul>
-        <li>It makes no network requests. There is no server, no analytics, no telemetry, and no crash reporting.</li>
-        <li>It does not load or run remote code.</li>
-        <li>It does not sell, rent, or share data with anyone.</li>
-        <li>It does not read the content of web pages and does not inject scripts into them.</li>
-        <li>It does not show ads.</li>
-      </ul>
+        <section id="how">
+          <div class="section-head">
+            <h2>How it works</h2>
+            <p>Three steps, and none of them take more than a second.</p>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <b>Step 1</b>
+              <h3>Open the popup</h3>
+              <p>
+                Click the Tab Warden icon. You see four numbers, the duplicate groups,
+                and your five heaviest tabs.
+              </p>
+            </div>
+            <div class="step">
+              <b>Step 2</b>
+              <h3>Pick what to let go of</h3>
+              <p>
+                Close the copies, free one heavy tab, or free them all at once. Every
+                action shows a confirmation first and then reports how many were done
+                and how many were kept.
+              </p>
+            </div>
+            <div class="step">
+              <b>Step 3</b>
+              <h3>Let it run by itself, if you want</h3>
+              <p>
+                Turn on the daily clean up in the options and the same rules apply on
+                their own, once a day, without you opening anything.
+              </p>
+            </div>
+          </div>
+          <div class="wide-shot" style="margin-top: 26px;">
+            <img src="store/screenshot-1.png" alt="The Tab Warden popup next to the words Find the copies, Unload the idle ones.">
+          </div>
+        </section>
 
-      <h2>Permissions</h2>
-      <ul>
-        <li>
-          <code>tabs</code>: read the URL, title, and last used time of open tabs. Without this
-          permission, Chrome only exposes tab identifiers, which are not enough to find
-          duplicates or to tell which tabs have been left idle.
-        </li>
-        <li>
-          <code>storage</code>: save the five preferences listed above on this device, and
-          the record of the last daily clean up.
-        </li>
-        <li>
-          <code>alarms</code>: wake the extension up once a day so the daily clean up can
-          run while the browser is open. It is used for nothing else, and it does not send
-          anything over the network.
-        </li>
-      </ul>
-      <p>No other permissions are requested.</p>
+        <section id="quiet">
+          <div class="quiet">
+            <h2>What it will not do</h2>
+            <ul>
+              <li>It makes no network requests. There is no server, no analytics, no telemetry, and no crash reporting.</li>
+              <li>It does not load or run remote code.</li>
+              <li>It does not read the content of web pages and does not inject scripts into them.</li>
+              <li>It does not sell, rent, or share anything with anyone.</li>
+              <li>It does not show ads.</li>
+            </ul>
+          </div>
+        </section>
 
-      <h2>Your control over the data</h2>
-      <p>
-        Your preferences stay on your device until you change them or remove the extension.
-        Removing the extension deletes them. Tab data is never kept, so there is nothing else
-        to delete.
-      </p>
+        <section id="faq">
+          <div class="section-head">
+            <h2>Questions</h2>
+          </div>
+          <div class="faq">
+            <details>
+              <summary>Do I need an account?</summary>
+              <p>No. There is no sign in and nothing to create. The extension works straight after you load it.</p>
+            </details>
+            <details>
+              <summary>Will it close a tab I still need?</summary>
+              <p>
+                The tab you are looking at is never closed or unloaded, in any window.
+                Pinned tabs and tabs playing audio are kept by default. You can turn those
+                guards off in the options if you want, and closing always asks first.
+              </p>
+            </details>
+            <details>
+              <summary>What happens to a tab when it is unloaded?</summary>
+              <p>
+                Chrome frees the memory that page was holding and keeps the tab in the
+                strip. The page reloads when you click it, the way a tab does after a
+                restart. Anything you had not saved on that page is gone.
+              </p>
+            </details>
+            <details>
+              <summary>Does the weight show real memory?</summary>
+              <p>
+                No, and the popup says so. Chrome does not give extensions a real memory
+                figure for a tab, so the score is an estimate built from how long a tab
+                has been idle, whether it is playing audio, and whether it is a duplicate.
+              </p>
+            </details>
+            <details>
+              <summary>Is it in the Chrome Web Store?</summary>
+              <p>
+                Not yet. The submission is in review, and the download on this page is
+                the same build that goes to the store. Load it unpacked from
+                <code>chrome://extensions</code> while you wait.
+              </p>
+            </details>
+          </div>
+        </section>
 
-      <h2>Limited Use</h2>
-      <p>
-        The use of information received from Google APIs will adhere to the Chrome Web Store
-        User Data Policy, including the Limited Use requirements.
-      </p>
+        <section id="privacy">
+          <div class="section-head">
+            <h2>Privacy policy</h2>
+            <p>
+              The short version is above. This is the full version, which is the one the
+              Chrome Web Store reads.
+            </p>
+          </div>
+          <div class="policy">
+            <p class="meta">Last updated: 21 October 2026</p>
 
-      <h2>Changes to this policy</h2>
-      <p>
-        If this policy changes, the date at the top of this page changes with it. The current
-        version always lives at this URL.
-      </p>
+            <p>
+              Tab Warden is a Chrome extension that finds duplicate tabs, lists every open tab
+              grouped by site, closes the copies you choose to remove, and unloads the tabs you
+              have not used. It can also do that unloading on its own once a day, if you turn
+              that on. This page explains what it reads, what it stores, and what it does not
+              do.
+            </p>
 
-      <h2>Contact</h2>
-      <p>
-        Rehan Ilyas, <a href="mailto:rehanilyas4726@gmail.com">rehanilyas4726@gmail.com</a>.
-        You can also open an issue at
-        <a href="https://github.com/RehanIlyas-dev/Tab-Warden/issues">github.com/RehanIlyas-dev/Tab-Warden</a>.
-      </p>
+            <h2>What the extension reads</h2>
+            <ul>
+              <li>The URL and title of your open tabs, so it can spot duplicates and group tabs by site.</li>
+              <li>Whether a tab is pinned, playing audio, or already unloaded, so it can pick which copy to keep.</li>
+              <li>Which window a tab belongs to, so it can bring that window forward when you click a row.</li>
+              <li>Which tab you are currently looking at, so it never closes it.</li>
+              <li>When a tab was last used, so it can tell you which ones have been sitting idle.</li>
+            </ul>
+            <p>
+              This information is requested from Chrome each time the popup opens. It is held in
+              memory while the popup is open and is never written to disk. If you turn on the
+              daily clean up, the same tab details are read once a day, in the background, and
+              are used only to decide which tabs to unload. They are not written to disk.
+            </p>
 
-      <footer>
-        Tab Warden is a Chrome extension published by Rehan Ilyas.
-      </footer>
+            <h2>What the extension stores</h2>
+            <p>
+              Five preferences are saved on your device with <code>chrome.storage.local</code>:
+            </p>
+            <ul>
+              <li><code>ignorePinnedWhenClosing</code>, whether pinned tabs are skipped when closing or unloading.</li>
+              <li><code>confirmBeforeClosing</code>, whether a confirmation row appears before closing.</li>
+              <li><code>staleAfterDays</code>, how many days a tab has to be unused before it counts as idle.</li>
+              <li><code>skipAudibleWhenDiscarding</code>, whether tabs playing audio are left alone.</li>
+              <li><code>autoFreeEnabled</code>, whether the daily clean up runs on its own.</li>
+            </ul>
+            <p>
+              The daily clean up also keeps a record of its last run: the time it ran, how many
+              tabs it unloaded, and how many it kept. That record holds three numbers, no tab
+              titles, no URLs and no browsing history.
+            </p>
+            <p>
+              Nothing else is stored. No tab titles, URLs, or browsing history are saved.
+            </p>
+
+            <h2>What the extension does not do</h2>
+            <ul>
+              <li>It makes no network requests. There is no server, no analytics, no telemetry, and no crash reporting.</li>
+              <li>It does not load or run remote code.</li>
+              <li>It does not sell, rent, or share data with anyone.</li>
+              <li>It does not read the content of web pages and does not inject scripts into them.</li>
+              <li>It does not show ads.</li>
+            </ul>
+
+            <h2>Permissions</h2>
+            <ul>
+              <li>
+                <code>tabs</code>: read the URL, title, and last used time of open tabs. Without this
+                permission, Chrome only exposes tab identifiers, which are not enough to find
+                duplicates or to tell which tabs have been left idle.
+              </li>
+              <li>
+                <code>storage</code>: save the five preferences listed above on this device, and
+                the record of the last daily clean up.
+              </li>
+              <li>
+                <code>alarms</code>: wake the extension up once a day so the daily clean up can
+                run while the browser is open. It is used for nothing else, and it does not send
+                anything over the network.
+              </li>
+            </ul>
+            <p>No other permissions are requested.</p>
+
+            <h2>Your control over the data</h2>
+            <p>
+              Your preferences stay on your device until you change them or remove the extension.
+              Removing the extension deletes them. Tab data is never kept, so there is nothing else
+              to delete.
+            </p>
+
+            <h2>Limited Use</h2>
+            <p>
+              The use of information received from Google APIs will adhere to the Chrome Web Store
+              User Data Policy, including the Limited Use requirements.
+            </p>
+
+            <h2>Changes to this policy</h2>
+            <p>
+              If this policy changes, the date at the top of this page changes with it. The current
+              version always lives at this URL.
+            </p>
+
+            <h2>Contact</h2>
+            <p>
+              Rehan Ilyas, <a href="mailto:rehanilyas4726@gmail.com">rehanilyas4726@gmail.com</a>.
+              You can also open an issue at
+              <a href="https://github.com/RehanIlyas-dev/Tab-Warden/issues">github.com/RehanIlyas-dev/Tab-Warden</a>.
+            </p>
+          </div>
+        </section>
+      </div>
     </main>
+
+    <footer>
+      <div class="wrap foot">
+        <img src="icon-128.png" alt="" width="26" height="26" style="border-radius: 7px;">
+        <span>Tab Warden, made by Rehan Ilyas.</span>
+        <nav>
+          <a href="https://github.com/RehanIlyas-dev/Tab-Warden">Source</a>
+          <a href="https://github.com/RehanIlyas-dev/Tab-Warden/releases/latest">Download</a>
+          <a href="https://github.com/RehanIlyas-dev/Tab-Warden/issues">Report a problem</a>
+          <a href="#privacy">Privacy policy</a>
+        </nav>
+      </div>
+    </footer>
   </body>
 </html>
