@@ -54,13 +54,14 @@
   <body>
     <main>
       <h1>Tab Warden Privacy Policy</h1>
-      <p class="meta">Last updated: 19 October 2026</p>
+      <p class="meta">Last updated: 21 October 2026</p>
 
       <p>
         Tab Warden is a Chrome extension that finds duplicate tabs, lists every open tab
         grouped by site, closes the copies you choose to remove, and unloads the tabs you
-        have not used. This page explains what it reads, what it stores, and what it does
-        not do.
+        have not used. It can also do that unloading on its own once a day, if you turn
+        that on. This page explains what it reads, what it stores, and what it does not
+        do.
       </p>
 
       <h2>What the extension reads</h2>
@@ -73,19 +74,27 @@
       </ul>
       <p>
         This information is requested from Chrome each time the popup opens. It is held in
-        memory while the popup is open and is never written to disk.
+        memory while the popup is open and is never written to disk. If you turn on the
+        daily clean up, the same tab details are read once a day, in the background, and
+        are used only to decide which tabs to unload. They are not written to disk.
       </p>
 
       <h2>What the extension stores</h2>
       <p>
-        Four preferences are saved on your device with <code>chrome.storage.local</code>:
+        Five preferences are saved on your device with <code>chrome.storage.local</code>:
       </p>
       <ul>
         <li><code>ignorePinnedWhenClosing</code>, whether pinned tabs are skipped when closing or unloading.</li>
         <li><code>confirmBeforeClosing</code>, whether a confirmation row appears before closing.</li>
         <li><code>staleAfterDays</code>, how many days a tab has to be unused before it counts as idle.</li>
         <li><code>skipAudibleWhenDiscarding</code>, whether tabs playing audio are left alone.</li>
+        <li><code>autoFreeEnabled</code>, whether the daily clean up runs on its own.</li>
       </ul>
+      <p>
+        The daily clean up also keeps a record of its last run: the time it ran, how many
+        tabs it unloaded, and how many it kept. That record holds three numbers, no tab
+        titles, no URLs and no browsing history.
+      </p>
       <p>
         Nothing else is stored. No tab titles, URLs, or browsing history are saved.
       </p>
@@ -107,7 +116,13 @@
           duplicates or to tell which tabs have been left idle.
         </li>
         <li>
-          <code>storage</code>: save the four preferences listed above on this device.
+          <code>storage</code>: save the five preferences listed above on this device, and
+          the record of the last daily clean up.
+        </li>
+        <li>
+          <code>alarms</code>: wake the extension up once a day so the daily clean up can
+          run while the browser is open. It is used for nothing else, and it does not send
+          anything over the network.
         </li>
       </ul>
       <p>No other permissions are requested.</p>
